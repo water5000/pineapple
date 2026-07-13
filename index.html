@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pineapple Smart Farm</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+    #map { height: 350px; width: 100%; border-radius: 0.5rem; z-index: 1; }
+    #dashMap { height: 400px; width: 100%; border-radius: 0.5rem; z-index: 1; }
+  </style>
+</head>
+<body id="appBody" class="flex flex-col min-h-screen">
+
+  <nav class="bg-green-700 shadow-lg sticky top-0 z-50" id="navbar">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex-shrink-0 flex items-center text-white font-bold text-xl">
+          🍍 Smart Pineapple
+        </div>
+        <div class="flex space-x-2 md:space-x-4">
+          <button onclick="switchTab('form')" id="btnForm" class="bg-green-800 text-white px-3 py-2 rounded-md text-sm font-medium shadow-inner">📝 ลงทะเบียน</button>
+          <button onclick="switchTab('dashboard')" id="btnDash" class="text-green-200 hover:bg-green-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium">📊 แดชบอร์ด</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-grow flex items-start justify-center p-4 mt-4 w-full">
+    
+    <div id="formSection" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-3xl border-t-4 border-green-500">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-800">ลงทะเบียนแปลงปลูก</h2>
+        <p class="text-sm text-gray-500 mt-2">ระบบพยากรณ์ผลผลิตและเตือนภัยโรคระบาด (AI-Powered)</p>
+      </div>
+
+      <form id="pineappleForm" onsubmit="submitForm(event)" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อแปลง / ชื่อเกษตรกร <span class="text-red-500">*</span></label><input type="text" name="farmName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none"></div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">พื้นที่ปลูก (ไร่) <span class="text-red-500">*</span></label><input type="number" step="0.1" name="plantArea" required min="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">วันที่เริ่มปลูก</label><input type="date" name="plantingDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">วันที่บังคับดอก</label><input type="date" name="forcingDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">สภาพการระบายน้ำของดิน</label>
+          <select name="soilDrainage" required class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+            <option value="" disabled selected>-- กรุณาเลือกลักษณะการระบายน้ำ --</option>
+            <option value="good">ดี (น้ำไม่ขังหลังฝนตก)</option>
+            <option value="moderate">ปานกลาง (มีน้ำขังบ้างแต่แห้งไว)</option>
+            <option value="poor">แย่ (น้ำขังนาน เป็นแอ่ง)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">พิกัดแปลงปลูก (คลิกบนแผนที่)</label>
+          <div id="map" class="border border-gray-300 shadow-inner mb-3"></div>
+          <div class="grid grid-cols-2 gap-4">
+            <input type="text" id="latitude" name="latitude" placeholder="Lat..." readonly required class="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700">
+            <input type="text" id="longitude" name="longitude" placeholder="Lng..." readonly required class="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700">
+          </div>
+        </div>
+
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 text-center">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">📸 วิเคราะห์ความสุกด้วย AI</label>
+          <input type="file" id="pineappleImage" accept="image/*" class="hidden" onchange="previewImage(this)">
+          <label for="pineappleImage" class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer shadow hover:bg-blue-700">เลือก/ถ่ายภาพ</label>
+          <img id="imagePreview" src="#" class="hidden max-h-48 rounded-lg shadow mx-auto mt-4">
+          <div id="gradeResult" class="hidden mt-4 p-3 bg-white rounded-lg border border-purple-200 text-left">
+            <p class="text-sm"><b>💡 ผลการคัดเกรด:</b> <span id="gradeLevel" class="font-semibold text-purple-700"></span></p>
+            <p class="text-xs text-gray-500" id="gradeDesc"></p>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">บันทึกข้อมูลและวิเคราะห์ผล</button>
+      </form>
+    </div>
+
+    <div id="dashboardSection" class="hidden w-full max-w-7xl">
+      <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border-t-4 border-blue-500 text-gray-800">
+        
+        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 pb-6 border-b border-gray-200 gap-4">
+          <div><h2 class="text-2xl font-bold text-gray-800">ระบบพยากรณ์ผลผลิตและเตือนภัยโรคระบาด</h2></div>
+          <div class="flex flex-wrap gap-4 md:space-x-8">
+            <div class="text-right"><div class="text-xs text-gray-500 uppercase tracking-wider">ผลผลิตรวม (ตัน)</div><div class="text-2xl font-bold text-green-600" id="kpiYield">0.00</div></div>
+            <div class="text-right"><div class="text-xs text-gray-500 uppercase tracking-wider">พื้นที่รวม (ไร่)</div><div class="text-2xl font-bold text-gray-800" id="kpiArea">0.0</div></div>
+            <div class="text-right"><div class="text-xs text-gray-500 uppercase tracking-wider">ความหวาน (Brix)</div><div class="text-2xl font-bold text-orange-500" id="kpiBrix">0.0&deg;</div></div>
+            <div class="text-right border-l-2 border-blue-100 pl-4 md:pl-8"><div class="text-xs text-gray-500 uppercase tracking-wider">รายได้คาดการณ์</div><div class="text-2xl font-bold text-blue-600" id="kpiRevenue">฿0</div></div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <div class="flex items-center w-full md:w-auto">
+            <span class="text-sm font-bold text-gray-700 mr-3">🔍 ค้นหา/กรองข้อมูล:</span>
+            <input type="text" id="searchFarm" placeholder="พิมพ์ชื่อแปลง..." onkeyup="applyFilters()" class="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition">
+          </div>
+          <div class="flex w-full md:w-auto">
+            <select id="filterRisk" onchange="applyFilters()" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none bg-white focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
+              <option value="All">ทุกระดับความเสี่ยง</option><option value="High">🔴 เฉพาะเสี่ยงสูง</option><option value="Medium">🟡 เฉพาะเสี่ยงปานกลาง</option><option value="Low">🟢 เฉพาะแปลงปกติ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div id="alertContainer" class="lg:col-span-2 bg-red-50 p-5 rounded-xl border border-red-200 shadow-sm flex flex-col transition-all duration-300">
+            <h3 id="alertTitle" class="text-sm font-bold text-red-700 mb-3 flex items-center">🚨 งานด่วน: แปลงที่ต้องเฝ้าระวังโรคระบาด (รากเน่า/ยอดเน่า)</h3>
+            <div id="alertsList" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+          </div>
+          <div class="bg-sky-50 p-5 rounded-xl border border-sky-200 shadow-sm flex flex-col">
+            <h3 class="text-sm font-bold text-sky-800 mb-3 flex items-center">☁️ สภาพอากาศพื้นที่ปลูก (3 วัน)</h3>
+            <div id="weatherContainer" class="flex justify-between items-center h-full gap-2"></div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col mb-6">
+          <h3 class="text-sm font-bold text-gray-700 mb-4">แผนที่พิกัดแปลงปลูก (Simulation)</h3>
+          <div id="dashMap" class="w-full rounded-lg border border-gray-300 bg-gray-200"></div>
+        </div>
+        
+        <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-gray-700">ข้อมูลรายแปลง</h3>
+          </div>
+          <div id="farmInfoPanel" class="w-full flex items-center justify-center text-gray-500 bg-white rounded-lg border border-gray-200 p-6 shadow-inner min-h-[120px]">
+            คลิกที่จุดบนแผนที่เพื่อดูข้อมูล
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm"><h3 class="text-sm font-bold text-gray-700 mb-4">ผลผลิตรายเดือน (ตัน)</h3><div class="h-48 relative w-full"><canvas id="yieldChart"></canvas></div></div>
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center relative">
+            <h3 class="text-sm font-bold text-gray-700 mb-2 w-full text-left">ความเสี่ยงโรคระบาด</h3><div class="h-48 relative w-full flex justify-center"><canvas id="riskChart"></canvas></div>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none mt-6"><span id="riskCenterText" class="text-gray-800 font-bold text-xl text-center"></span></div>
+          </div>
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
+            <h3 class="text-sm font-bold text-gray-700 mb-2 w-full text-left">ผลวิเคราะห์ความสุก (AI)</h3><div class="h-48 relative w-full flex justify-center"><canvas id="gradeChart"></canvas></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="bg-transparent border-t border-gray-200 mt-auto py-4" id="footer">
+    <div class="max-w-7xl mx-auto text-center text-sm text-gray-500" id="footerText">
+      Copyright © 2026 @water5000 | FB : <a href="https://www.facebook.com/Putthasit.N" target="_blank" class="text-blue-600 hover:underline">Putthasit.N</a>
+    </div>
+  </footer>
+
+  <script>
+    // ==========================================
+    // 0. Apps Script Web App URL (Backend API)
+    // แก้ URL นี้เป็น URL ที่ได้จากการ Deploy > New deployment > Web app
+    // ==========================================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzmGy5hPVrMwtm5teS-wG8ItEq8mnGoF0B8JonPiRS75efn7iqarCISUuCR0U80t9Q/exec";
+
+    // เรียก Apps Script Web App แบบไม่ให้เกิด CORS preflight
+    // (ใช้ Content-Type: text/plain แทน application/json ตามข้อจำกัดของ Apps Script)
+    function callAppsScript(action, payload) {
+      return fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, payload })
+      }).then(res => res.json());
+    }
+
+    // ==========================================
+    // 1. ระบบจัดการหน้าต่าง (Tabs)
+    // ==========================================
+    function switchTab(tabName) {
+      if (tabName === 'form') {
+        document.getElementById('formSection').classList.remove('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+        document.getElementById('btnForm').className = "bg-green-800 text-white px-3 py-2 rounded-md text-sm font-medium shadow-inner";
+        document.getElementById('btnDash').className = "text-green-200 hover:bg-green-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium";
+        if(map) setTimeout(() => map.invalidateSize(), 200);
+      } else {
+        document.getElementById('formSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
+        document.getElementById('btnDash').className = "bg-green-800 text-white px-3 py-2 rounded-md text-sm font-medium shadow-inner";
+        document.getElementById('btnForm').className = "text-green-200 hover:bg-green-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium";
+        loadDashboard(); 
+        if(dashMap) setTimeout(() => dashMap.invalidateSize(), 200);
+      }
+    }
+
+    // ==========================================
+    // 2. แผนที่ Form และ AI (แบบบีบอัดรูป Base64 ลง Sheet)
+    // ==========================================
+    const URL = "https://teachablemachine.withgoogle.com/models/g9bHNIOuJ/"; 
+    let aiModel; let map; let marker;
+    let currentImageBase64 = ""; // ตัวแปรเก็บรูปภาพเพื่อส่งไป Sheet
+
+    document.addEventListener('DOMContentLoaded', function() {
+      tmImage.load(URL + "model.json", URL + "metadata.json").then(model => aiModel = model).catch(e => console.log(e));
+      map = L.map('map').setView([11.8124, 99.7975], 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      map.on('click', function(e) {
+        if (marker) marker.setLatLng(e.latlng); else marker = L.marker(e.latlng).addTo(map);
+        document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+      });
+    });
+
+    // 🎯 โหลดและ "บีบอัดรูปภาพ" ก่อนส่งให้ Google Sheet (400px)
+    async function previewImage(input) {
+      if (input.files && input.files[0]) {
+        let file = input.files[0];
+        let reader = new FileReader();
+        
+        reader.onload = function(e) {
+          let imgElement = new Image();
+          imgElement.src = e.target.result;
+          
+          imgElement.onload = async function() {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            let maxWidth = 400; // บีบอัดความกว้าง 400px
+            let scaleSize = maxWidth / imgElement.width;
+            
+            if (scaleSize < 1) {
+              canvas.width = maxWidth;
+              canvas.height = imgElement.height * scaleSize;
+            } else {
+              canvas.width = imgElement.width;
+              canvas.height = imgElement.height;
+            }
+            
+            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+            
+            // แปลงรูปเป็น Base64 (คุณภาพ 60%) เพื่อไม่ให้หนัก Sheet เกินไป
+            currentImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+            
+            let imgPreview = document.getElementById('imagePreview');
+            imgPreview.src = currentImageBase64; 
+            imgPreview.classList.remove('hidden');
+            
+            document.getElementById('gradeResult').classList.remove('hidden');
+            document.getElementById('gradeLevel').innerText = "กำลังใช้ AI วิเคราะห์...";
+            if (aiModel) {
+              setTimeout(async () => {
+                const predictions = await aiModel.predict(imgPreview);
+                let bestClass = predictions.reduce((p, c) => p.probability > c.probability ? p : c);
+                document.getElementById('gradeLevel').innerText = `ระดับ ${bestClass.className} (${(bestClass.probability*100).toFixed(0)}%)`;
+              }, 500);
+            }
+          }
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function submitForm(event) {
+      event.preventDefault(); const form = event.target;
+      if (!form.latitude.value) return Swal.fire({ icon: 'warning', title: 'กรุณาปักหมุดบนแผนที่' });
+
+      let aiResult = document.getElementById('gradeLevel').innerText || "ไม่ได้วิเคราะห์";
+      
+      const formData = { 
+        farmName: form.farmName.value, plantArea: form.plantArea.value, 
+        plantingDate: form.plantingDate.value, forcingDate: form.forcingDate.value, 
+        soilDrainage: form.soilDrainage.value, latitude: form.latitude.value, 
+        longitude: form.longitude.value, aiAnalysis: aiResult,
+        imageBase64: currentImageBase64 // แนบรูปภาพ Base64 ไปด้วย
+      };
+      
+      Swal.fire({ title: 'กำลังบันทึกข้อมูล...', didOpen: () => Swal.showLoading() });
+      callAppsScript('saveData', formData).then(res => {
+        if(res.success) { 
+          Swal.fire('สำเร็จ!', res.message, 'success'); 
+          form.reset(); currentImageBase64 = ""; 
+          if(marker) map.removeLayer(marker); 
+          document.getElementById('imagePreview').classList.add('hidden'); 
+        } else {
+          Swal.fire('Error', res.message, 'error');
+        }
+      }).catch(err => Swal.fire('Error', err.toString(), 'error'));
+    }
+
+    // ==========================================
+    // 3. ระบบ Dashboard (Charts, Map, Filter, Alerts & Weather)
+    // ==========================================
+    let yieldChart, gradeChart, riskChart;
+    let dashMap; let dashMarkers = L.layerGroup();
+    Chart.defaults.color = '#6b7280'; 
+    let allFarmsData = []; 
+
+    function loadDashboard() {
+      Swal.fire({ title: 'กำลังดึงข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      callAppsScript('getDashboardData', {}).then(res => {
+        Swal.close();
+        if(res.success) renderDashboard(res.data);
+        else Swal.fire('Error', res.message || 'โหลดข้อมูลไม่สำเร็จ', 'error');
+      }).catch(err => { Swal.close(); Swal.fire('Error', err.toString(), 'error'); });
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('kpiYield').innerText = data.totalYield.toFixed(2);
+      document.getElementById('kpiArea').innerText = data.totalArea.toFixed(1);
+      document.getElementById('kpiBrix').innerText = data.countBrix > 0 ? (data.totalBrix / data.countBrix).toFixed(1) + '°' : '0°';
+      document.getElementById('kpiRevenue').innerText = '฿' + data.totalRevenue.toLocaleString('th-TH', {maximumFractionDigits: 0});
+
+      let labelsYield = Object.keys(data.monthlyYields);
+      let valuesYield = Object.values(data.monthlyYields);
+
+      if(yieldChart) yieldChart.destroy(); if(gradeChart) gradeChart.destroy(); if(riskChart) riskChart.destroy();
+
+      yieldChart = new Chart(document.getElementById('yieldChart'), {
+        type: 'bar', data: { labels: labelsYield, datasets: [{ data: valuesYield, backgroundColor: '#60a5fa', borderRadius: 4 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#e5e7eb' } }, x: { grid: { display: false } } } }
+      });
+
+      let riskTotal = data.risks.High + data.risks.Medium + data.risks.Low;
+      let riskPct = riskTotal > 0 ? ((data.risks.High + data.risks.Medium) / riskTotal * 100).toFixed(0) : 0;
+      document.getElementById('riskCenterText').innerHTML = `<span class='text-sm font-normal'>${riskPct}%</span><br>เสี่ยง`;
+
+      riskChart = new Chart(document.getElementById('riskChart'), {
+        type: 'doughnut', data: { labels: ['เสี่ยงสูง', 'เสี่ยงกลาง', 'ปกติ'], datasets: [{ data: [data.risks.High, data.risks.Medium, data.risks.Low], backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'], borderWidth: 2, borderColor: '#fff' }] },
+        options: { cutout: '75%', plugins: { legend: { display: false } } }
+      });
+
+      gradeChart = new Chart(document.getElementById('gradeChart'), {
+        type: 'doughnut', data: { labels: ['ระดับ 0', 'ระดับ 1', 'ระดับ 2', 'ระดับ 3'], datasets: [{ data: [data.aiGrades.Level0, data.aiGrades.Level1, data.aiGrades.Level2, data.aiGrades.Level3], backgroundColor: ['#22c55e', '#fde047', '#f59e0b', '#f97316'], borderWidth: 2, borderColor: '#fff' }] },
+        options: { cutout: '65%', maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } } 
+      });
+
+      if(!dashMap) {
+        dashMap = L.map('dashMap').setView([11.8124, 99.7975], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(dashMap);
+        dashMarkers.addTo(dashMap);
+      }
+      setTimeout(() => dashMap.invalidateSize(), 300);
+      
+      allFarmsData = data.farms;
+      applyFilters();     
+      renderAlerts();     
+      renderWeather(data.weatherForecast);
+    }
+
+    function renderWeather(forecastData) {
+      let weatherContainer = document.getElementById('weatherContainer');
+      weatherContainer.innerHTML = '';
+      if(forecastData && forecastData.length > 0) {
+        forecastData.forEach(w => {
+          weatherContainer.innerHTML += `
+            <div class="bg-white p-3 rounded-lg border border-sky-100 shadow-sm flex-1 text-center hover:bg-sky-50 transition">
+              <p class="text-xs text-gray-500 font-bold">${w.day}</p>
+              <div class="text-2xl my-1">${w.icon}</div>
+              <p class="text-sm font-bold text-gray-800">${w.temp}</p>
+              <p class="text-xs text-sky-600 font-semibold">💧 ${w.rain}</p>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function applyFilters() {
+      let searchText = document.getElementById('searchFarm').value.toLowerCase();
+      let riskFilter = document.getElementById('filterRisk').value;
+      dashMarkers.clearLayers();
+      let visibleCount = 0;
+
+      allFarmsData.forEach(farm => {
+        let matchSearch = farm.name.toLowerCase().includes(searchText);
+        let matchRisk = (riskFilter === 'All') || (farm.risk === riskFilter);
+        if (matchSearch && matchRisk) {
+          let color = farm.risk === 'High' ? '#ef4444' : (farm.risk === 'Medium' ? '#f59e0b' : '#22c55e');
+          let m = L.circleMarker([farm.lat, farm.lng], { radius: 8, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9 });
+          m.on('click', () => updateFarmPanel(farm));
+          dashMarkers.addLayer(m);
+          visibleCount++;
+        }
+      });
+
+      let panel = document.getElementById('farmInfoPanel');
+      panel.classList.add('justify-center', 'items-center');
+      if(visibleCount > 0) panel.innerHTML = `พบข้อมูล ${visibleCount} แปลงบนแผนที่ (คลิกที่จุดเพื่อดูรายละเอียด)`;
+      else panel.innerHTML = `<span class="text-red-500">ไม่พบแปลงที่ตรงกับเงื่อนไขการค้นหา</span>`;
+    }
+
+    function renderAlerts() {
+      let alertsList = document.getElementById('alertsList');
+      let alertContainer = document.getElementById('alertContainer');
+      let alertTitle = document.getElementById('alertTitle');
+      alertsList.innerHTML = '';
+      let highRiskFarms = allFarmsData.filter(f => f.risk === 'High');
+
+      if(highRiskFarms.length > 0) {
+        alertContainer.className = "lg:col-span-2 bg-red-50 p-5 rounded-xl border border-red-200 shadow-sm flex flex-col transition-all duration-300";
+        alertTitle.innerHTML = "🚨 งานด่วน: แปลงที่ต้องเฝ้าระวังโรคระบาด (รากเน่า/ยอดเน่า)";
+        alertTitle.className = "text-sm font-bold text-red-700 mb-3 flex items-center";
+
+        highRiskFarms.forEach(farm => {
+          alertsList.innerHTML += `
+            <div class="bg-white p-4 rounded-lg border border-red-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
+              <div><p class="font-bold text-gray-800 text-sm">🍍 ${farm.name}</p><p class="text-xs text-red-500 mt-1">แนะนำ: ตรวจสอบระบบระบายน้ำด่วน</p></div>
+              <button onclick="focusMapOnFarm(${farm.id})" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">📍 ดูพิกัด</button>
+            </div>
+          `;
+        });
+      } else {
+        alertContainer.className = "lg:col-span-2 bg-green-50 p-5 rounded-xl border border-green-200 shadow-sm flex flex-col transition-all duration-300";
+        alertTitle.innerHTML = "✅ สถานการณ์ปกติ";
+        alertTitle.className = "text-sm font-bold text-green-700 mb-2 flex items-center";
+        alertsList.innerHTML = `<p class="text-sm text-green-600">ไม่มีแปลงที่เสี่ยงต่อโรคระบาดรุนแรงในขณะนี้</p>`;
+      }
+    }
+
+    function focusMapOnFarm(farmId) {
+      let farm = allFarmsData.find(f => f.id === farmId);
+      if(farm) {
+        document.getElementById('filterRisk').value = 'All';
+        applyFilters();
+        dashMap.flyTo([farm.lat, farm.lng], 15, { duration: 1.5 });
+        updateFarmPanel(farm);
+        document.getElementById('dashMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 🎯 อัปเดตข้อมูลรายแปลง: ตรวจสอบ Base64 (data:image)
+    function updateFarmPanel(farm) {
+      document.getElementById('farmInfoPanel').classList.remove('justify-center', 'text-gray-500', 'items-center');
+      
+      let photoHtml = "";
+      if (farm.photo && farm.photo.startsWith("data:image")) {
+        photoHtml = `
+          <div class="w-full md:w-1/4 flex flex-col justify-center items-center bg-gray-50 p-2 rounded-xl border border-gray-200">
+            <p class="text-xs text-gray-500 mb-2 font-bold">📸 ภาพวิเคราะห์ AI</p>
+            <img src="${farm.photo}" onclick="Swal.fire({imageUrl: '${farm.photo}', imageAlt: 'Pineapple', width: 400, confirmButtonColor: '#16a34a', confirmButtonText: 'ปิดหน้าต่าง'})" 
+                 class="w-full h-auto object-cover rounded-lg shadow-sm border border-gray-300 cursor-pointer hover:opacity-80 transition transform hover:scale-105" 
+                 title="คลิกเพื่อขยายภาพ">
+            <p class="text-[10px] text-blue-600 mt-2 cursor-pointer hover:underline" onclick="Swal.fire({imageUrl: '${farm.photo}', imageAlt: 'Pineapple', width: 400})">คลิกเพื่อขยาย</p>
+          </div>
+        `;
+      } else {
+        photoHtml = `
+          <div class="w-full md:w-1/4 flex flex-col justify-center items-center bg-gray-50 p-4 rounded-xl border border-gray-200 border-dashed text-gray-400">
+            <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span class="text-xs">ไม่มีภาพถ่าย</span>
+          </div>
+        `;
+      }
+
+      document.getElementById('farmInfoPanel').innerHTML = `
+        <div class="w-full flex flex-col md:flex-row gap-6">
+          ${photoHtml} 
+          <div class="w-full md:w-3/4 flex flex-col justify-center">
+            <h4 class="text-xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex justify-between">
+              <span>🍍 ${farm.name}</span>
+              <span class="text-sm font-normal px-2 py-1 bg-green-100 text-green-700 rounded-md">ID: ${farm.id}</span>
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">พื้นที่ (ไร่)</p><p class="text-xl font-bold text-gray-800">${farm.area}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ผลผลิต (ตัน)</p><p class="text-xl font-bold text-green-600">${farm.yield}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ความหวาน</p><p class="text-xl font-bold text-orange-500">${farm.brix}°</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">น้ำหนัก (กก.)</p><p class="text-xl font-bold text-gray-800">${farm.weight}</p></div>
+              <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm col-span-2 md:col-span-4 flex justify-between items-center">
+                <p class="text-sm text-blue-700 font-bold">💰 รายได้คาดการณ์</p>
+                <p class="text-2xl font-bold text-blue-700">฿${farm.revenue.toLocaleString('th-TH')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
