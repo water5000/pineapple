@@ -7,6 +7,16 @@ function getOpenWeatherApiKey() {
   return PropertiesService.getScriptProperties().getProperty('OPENWEATHER_API_KEY');
 }
 
+function getApiSecret() {
+  return PropertiesService.getScriptProperties().getProperty('API_SECRET');
+}
+
+function isAuthorizedRequest(body) {
+  const expectedSecret = getApiSecret();
+  if (!expectedSecret) return true;
+  return body && body.apiSecret === expectedSecret;
+}
+
 // =========================================
 // API Router (ใช้เมื่อหน้าเว็บ (index.html) ถูก host แยกไว้บน Vercel
 // แล้วยิง fetch() มาที่ Web App URL นี้แทนการใช้ google.script.run)
@@ -25,6 +35,10 @@ function doPost(e) {
     // ส่ง Content-Type เป็น text/plain จากฝั่ง client เพื่อเลี่ยง CORS preflight
     // จากนั้น parse JSON เอาเองที่นี่
     const body = JSON.parse(e.postData.contents);
+    if (!isAuthorizedRequest(body)) {
+      return jsonResponse({ success: false, message: 'Unauthorized request.' });
+    }
+
     const action = body.action;
     const payload = body.payload;
 
@@ -45,6 +59,47 @@ function doPost(e) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getImageUploadFolder() {
+  const props = PropertiesService.getScriptProperties();
+  const folderId = props.getProperty('IMAGE_FOLDER_ID');
+  if (folderId) {
+    try {
+      return DriveApp.getFolderById(folderId);
+    } catch (error) {
+      // Fall through and create a fresh folder if the configured folder is invalid.
+    }
+  }
+
+  const folder = DriveApp.createFolder('Smart Pineapple Uploads');
+  props.setProperty('IMAGE_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+function saveImageToDrive(imageBase64, farmName) {
+  if (!imageBase64 || !imageBase64.startsWith('data:image')) return '';
+
+  const match = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return '';
+
+  const mimeType = match[1];
+  const extension = mimeType.split('/')[1].replace('jpeg', 'jpg');
+  const bytes = Utilities.base64Decode(match[2]);
+  const safeFarmName = String(farmName || 'pineapple')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .slice(0, 80);
+  const fileName = `${Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss')}-${safeFarmName}.${extension}`;
+  const blob = Utilities.newBlob(bytes, mimeType, fileName);
+  const file = getImageUploadFolder().createFile(blob);
+
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (error) {
+    // Some Google Workspace policies block public link sharing; keep the save flow alive.
+  }
+
+  return `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w600`;
 }
 
 function saveData(formObj) {
@@ -137,10 +192,10 @@ function saveData(formObj) {
 // ส่วนที่ 5: ฟังก์ชันบันทึกข้อมูลลง Google Sheet (แบบไม่ง้อ Drive)
 // =========================================
 
-    // 🎯 1. รับค่ารูปภาพ Base64 มาตรงๆ ไม่ต้องสร้างไฟล์ใน Drive
-    let finalImageData = formObj.imageBase64 || "";
+    // 🎯 1. อัปโหลดรูปภาพไป Google Drive แล้วเก็บเฉพาะ URL ลง Sheet
+    let finalImageData = saveImageToDrive(formObj.imageBase64, formObj.farmName);
 
-    // 🎯 2. บันทึกลง Sheet (ใส่รูปในคอลัมน์ที่ 17 เลย)
+    // 🎯 2. บันทึกลง Sheet (คอลัมน์ที่ 17 เก็บ URL รูปภาพ)
     sheet.appendRow([
       timestamp,
       formObj.farmName,
@@ -158,7 +213,7 @@ function saveData(formObj) {
       riskData.level,          
       riskData.message,
       formObj.aiAnalysis,      // คอลัมน์ที่ 16: ผลวิเคราะห์ AI
-      finalImageData           // 🎯 คอลัมน์ที่ 17: รหัสรูปภาพ (Base64)
+      finalImageData           // 🎯 คอลัมน์ที่ 17: URL รูปภาพใน Google Drive
     ]);
     
     let seasonText = isOffSeason ? "นอกฤดูกาล" : "ในฤดูกาล";

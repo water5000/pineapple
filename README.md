@@ -18,6 +18,10 @@
    - เลื่อนลงไปที่ **Script Properties** > **Add script property**
    - Property: `OPENWEATHER_API_KEY`
    - Value: ใส่ API key ของคุณ (ขอใหม่ได้ที่ https://home.openweathermap.org/api_keys ถ้า key เดิมเคยหลุดไปที่ไหนมาก่อน)
+   - Property: `API_SECRET`
+   - Value: ใส่รหัสลับยาวๆ ที่เดาไม่ได้ และต้องใช้ค่าเดียวกับ Vercel Environment Variable `API_SECRET`
+   - Optional Property: `IMAGE_FOLDER_ID`
+   - Value: ใส่ Google Drive folder ID ถ้าต้องการกำหนดโฟลเดอร์เก็บรูปเอง ไม่ใส่ก็ได้ ระบบจะสร้างโฟลเดอร์ `Smart Pineapple Uploads` ให้อัตโนมัติ
    - กด **Save script properties**
 5. กด **Deploy > New deployment**
    - Select type: **Web app**
@@ -64,4 +68,6 @@ git push -u origin main
 ## หมายเหตุด้านความปลอดภัย
 
 - `OPENWEATHER_API_KEY` ใน `code.gs` ยังทำงานบนฝั่ง Apps Script (ไม่หลุดไปที่ browser) ปลอดภัยอยู่แล้ว เพราะ frontend ไม่เห็น key นี้เลย
-- เนื่องจาก `access: "ANYONE_ANONYMOUS"` ใครก็ตามที่มี Web App URL สามารถยิง `saveData` เข้ามาเขียน Sheet ได้ ถ้าต้องการจำกัดการเข้าถึง ให้พิจารณาเพิ่มการเช็ค token/secret key ง่ายๆ ใน payload แล้วตรวจสอบใน `doPost`
+- ตั้งค่า `API_SECRET` ให้ตรงกันทั้งใน Vercel Environment Variables และ Apps Script Script Properties เพื่อให้ Vercel proxy เป็นคนส่ง secret ไปหา Apps Script โดยไม่เปิดเผย secret ใน browser
+- ตั้งค่า `APPS_SCRIPT_URL` ใน Vercel Environment Variables ให้เป็น Web app URL ล่าสุด เพื่อลดการแก้ URL ในไฟล์โค้ด
+- รูปภาพที่ผู้ใช้อัปโหลดจะถูกบันทึกเป็นไฟล์ใน Google Drive แล้วเก็บเฉพาะ URL ลง Google Sheet เพื่อลดขนาด Sheet และช่วยให้ dashboard โหลดเร็วขึ้น

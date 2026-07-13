@@ -177,6 +177,16 @@
       }).then(res => res.json());
     }
 
+    function showApiError(res, fallbackMessage) {
+      const detail = res && res.detail ? `<pre class="text-left whitespace-pre-wrap text-xs mt-3 bg-gray-100 p-3 rounded">${res.detail}</pre>` : '';
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        html: `${(res && res.message) || fallbackMessage}${detail}`,
+        width: 700
+      });
+    }
+
     // ==========================================
     // 1. ระบบจัดการหน้าต่าง (Tabs)
     // ==========================================
@@ -285,9 +295,9 @@
           if(marker) map.removeLayer(marker); 
           document.getElementById('imagePreview').classList.add('hidden'); 
         } else {
-          Swal.fire('Error', res.message, 'error');
+          showApiError(res, 'บันทึกข้อมูลไม่สำเร็จ');
         }
-      }).catch(err => Swal.fire('Error', err.toString(), 'error'));
+      }).catch(err => showApiError({ message: err.toString() }, 'บันทึกข้อมูลไม่สำเร็จ'));
     }
 
     // ==========================================
@@ -303,8 +313,8 @@
       callAppsScript('getDashboardData', {}).then(res => {
         Swal.close();
         if(res.success) renderDashboard(res.data);
-        else Swal.fire('Error', res.message || 'โหลดข้อมูลไม่สำเร็จ', 'error');
-      }).catch(err => { Swal.close(); Swal.fire('Error', err.toString(), 'error'); });
+        else showApiError(res, 'โหลดข้อมูลไม่สำเร็จ');
+      }).catch(err => { Swal.close(); showApiError({ message: err.toString() }, 'โหลดข้อมูลไม่สำเร็จ'); });
     }
 
     function renderDashboard(data) {
@@ -435,7 +445,7 @@
       document.getElementById('farmInfoPanel').classList.remove('justify-center', 'text-gray-500', 'items-center');
       
       let photoHtml = "";
-      if (farm.photo && farm.photo.startsWith("data:image")) {
+      if (farm.photo && (farm.photo.startsWith("data:image") || farm.photo.startsWith("http"))) {
         photoHtml = `
           <div class="w-full md:w-1/4 flex flex-col justify-center items-center bg-gray-50 p-2 rounded-xl border border-gray-200">
             <p class="text-xs text-gray-500 mb-2 font-bold">📸 ภาพวิเคราะห์ AI</p>
