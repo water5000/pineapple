@@ -166,14 +166,13 @@
     // 0. Apps Script Web App URL (Backend API)
     // แก้ URL นี้เป็น URL ที่ได้จากการ Deploy > New deployment > Web app
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzmGy5hPVrMwtm5teS-wG8ItEq8mnGoF0B8JonPiRS75efn7iqarCISUuCR0U80t9Q/exec";
+    const APPS_SCRIPT_URL = "/api/apps-script";
 
-    // เรียก Apps Script Web App แบบไม่ให้เกิด CORS preflight
-    // (ใช้ Content-Type: text/plain แทน application/json ตามข้อจำกัดของ Apps Script)
+    // เรียกผ่าน Vercel API proxy เพื่อเลี่ยงปัญหา CORS/redirect ของ Apps Script บน browser
     function callAppsScript(action, payload) {
       return fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, payload })
       }).then(res => res.json());
     }

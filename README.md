@@ -4,7 +4,7 @@
 - **Frontend (`index.html`)** → host บน **Vercel** ผ่าน **GitHub**
 - **Backend (`code.gs`)** → ยังคงเป็น **Google Apps Script Web App** (อ่าน/เขียน Google Sheet เหมือนเดิม)
 
-หน้าเว็บจะเรียก Apps Script ผ่าน `fetch()` แทน `google.script.run` เดิม
+หน้าเว็บจะเรียก Vercel API proxy ผ่าน `fetch()` แล้วให้ proxy เรียก Apps Script แทน เพื่อเลี่ยงปัญหา CORS/redirect ของ `script.google.com`
 
 ---
 
@@ -28,12 +28,12 @@
 
 > ⚠️ ทุกครั้งที่แก้โค้ดใน `code.gs` แล้วอยากให้ URL เดิมอัปเดต ต้องกด **Deploy > Manage deployments > แก้ไข (ไอคอนดินสอ) > New version > Deploy** ไม่ใช่สร้าง deployment ใหม่ (ไม่งั้น URL จะเปลี่ยน)
 
-## ขั้นตอนที่ 2: ใส่ URL ลงในหน้าเว็บ
+## ขั้นตอนที่ 2: ใส่ URL ลงใน Vercel API proxy
 
-เปิดไฟล์ `index.html` หาบรรทัด:
+เปิดไฟล์ `api/apps-script.js` หาบรรทัด:
 
 ```js
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
+const FALLBACK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXXXXX/exec";
 ```
 
 แทนที่ด้วย Web app URL ที่ได้จากขั้นตอนที่ 1
