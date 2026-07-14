@@ -51,6 +51,19 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">พันธุ์สับปะรด</label>
+            <select name="variety" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+              <option value="ปัตตาเวีย">ปัตตาเวีย</option>
+              <option value="MD2">MD2</option>
+              <option value="ภูแล">ภูแล</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">จำนวนต้นต่อไร่</label><input type="number" name="plantDensity" value="7000" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><label class="block text-sm font-semibold text-gray-700 mb-1">วันที่เริ่มปลูก</label><input type="date" name="plantingDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
           <div><label class="block text-sm font-semibold text-gray-700 mb-1">วันที่บังคับดอก</label><input type="date" name="forcingDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
         </div>
@@ -65,8 +78,31 @@
           </select>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">ประเภทดิน</label>
+            <select name="soilType" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+              <option value="ดินร่วน">ดินร่วน</option>
+              <option value="ดินทราย">ดินทราย</option>
+              <option value="ดินเหนียว">ดินเหนียว</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">ระบบน้ำ</label>
+            <select name="irrigation" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+              <option value="น้ำฝน">น้ำฝน</option>
+              <option value="น้ำหยด">น้ำหยด</option>
+              <option value="สปริงเกอร์">สปริงเกอร์</option>
+              <option value="ไม่มีระบบน้ำ">ไม่มีระบบน้ำ</option>
+            </select>
+          </div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">คะแนนระบายน้ำ (1-5)</label><input type="number" name="drainageScore" value="3" min="1" max="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none"></div>
+        </div>
+
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">พิกัดแปลงปลูก (คลิกบนแผนที่)</label>
+          <button type="button" onclick="useCurrentLocation()" class="mb-3 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow">ใช้ตำแหน่งปัจจุบัน</button>
           <div id="map" class="border border-gray-300 shadow-inner mb-3"></div>
           <div class="grid grid-cols-2 gap-4">
             <input type="text" id="latitude" name="latitude" placeholder="Lat..." readonly required class="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700">
@@ -83,6 +119,12 @@
             <p class="text-sm"><b>💡 ผลการคัดเกรด:</b> <span id="gradeLevel" class="font-semibold text-purple-700"></span></p>
             <p class="text-xs text-gray-500" id="gradeDesc"></p>
           </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div id="statusLocation" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">พิกัด: ยังไม่พร้อม</div>
+          <div id="statusImage" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">รูปภาพ: ยังไม่มี</div>
+          <div id="statusAi" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">AI: รอวิเคราะห์</div>
         </div>
 
         <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">บันทึกข้อมูลและวิเคราะห์ผล</button>
@@ -111,6 +153,24 @@
             <select id="filterRisk" onchange="applyFilters()" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none bg-white focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
               <option value="All">ทุกระดับความเสี่ยง</option><option value="High">🔴 เฉพาะเสี่ยงสูง</option><option value="Medium">🟡 เฉพาะเสี่ยงปานกลาง</option><option value="Low">🟢 เฉพาะแปลงปกติ</option>
             </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+            <div class="text-xs font-bold text-red-700 uppercase">งานด่วนวันนี้</div>
+            <div class="text-3xl font-bold text-red-700 mt-1" id="urgentCount">0</div>
+            <div class="text-xs text-red-600 mt-1" id="urgentHint">ไม่มีแปลงเสี่ยงสูง</div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div class="text-xs font-bold text-amber-700 uppercase">ใกล้เก็บเกี่ยว 14 วัน</div>
+            <div class="text-3xl font-bold text-amber-700 mt-1" id="harvestSoonCount">0</div>
+            <div class="text-xs text-amber-700 mt-1" id="harvestSoonHint">ยังไม่มีรายการ</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div class="text-xs font-bold text-slate-700 uppercase">แปลงที่ยังไม่มีรูป</div>
+            <div class="text-3xl font-bold text-slate-700 mt-1" id="noPhotoCount">0</div>
+            <div class="text-xs text-slate-600 mt-1" id="noPhotoHint">ครบถ้วนดี</div>
           </div>
         </div>
 
@@ -213,17 +273,53 @@
     const URL = "https://teachablemachine.withgoogle.com/models/g9bHNIOuJ/"; 
     let aiModel; let map; let marker;
     let currentImageBase64 = ""; // ตัวแปรเก็บรูปภาพเพื่อส่งไป Sheet
+    let currentAiLabel = "";
+    let currentAiConfidence = "";
 
     document.addEventListener('DOMContentLoaded', function() {
       tmImage.load(URL + "model.json", URL + "metadata.json").then(model => aiModel = model).catch(e => console.log(e));
       map = L.map('map').setView([11.8124, 99.7975], 9);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
       map.on('click', function(e) {
-        if (marker) marker.setLatLng(e.latlng); else marker = L.marker(e.latlng).addTo(map);
-        document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
-        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+        setFormLocation(e.latlng.lat, e.latlng.lng);
       });
     });
+
+    function setFormLocation(lat, lng) {
+      const latlng = { lat, lng };
+      if (marker) marker.setLatLng(latlng); else marker = L.marker(latlng).addTo(map);
+      document.getElementById('latitude').value = Number(lat).toFixed(6);
+      document.getElementById('longitude').value = Number(lng).toFixed(6);
+      setStatus('statusLocation', 'พิกัด: พร้อม', 'green');
+      map.setView(latlng, Math.max(map.getZoom(), 14));
+    }
+
+    function setStatus(id, text, color) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const colorClass = color === 'green'
+        ? 'bg-green-50 text-green-700 border-green-200'
+        : color === 'amber'
+          ? 'bg-amber-50 text-amber-700 border-amber-200'
+          : 'bg-gray-100 text-gray-600 border-gray-200';
+      el.className = `${colorClass} border rounded-lg px-3 py-2 text-center font-semibold`;
+      el.innerText = text;
+    }
+
+    function useCurrentLocation() {
+      if (!navigator.geolocation) {
+        return Swal.fire({ icon: 'warning', title: 'เบราว์เซอร์ไม่รองรับตำแหน่งปัจจุบัน' });
+      }
+      Swal.fire({ title: 'กำลังหาตำแหน่ง...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          Swal.close();
+          setFormLocation(pos.coords.latitude, pos.coords.longitude);
+        },
+        err => Swal.fire({ icon: 'error', title: 'ไม่สามารถอ่านตำแหน่งได้', text: err.message }),
+        { enableHighAccuracy: true, timeout: 12000 }
+      );
+    }
 
     // 🎯 โหลดและ "บีบอัดรูปภาพ" ก่อนส่งให้ Google Sheet (400px)
     async function previewImage(input) {
@@ -257,15 +353,22 @@
             let imgPreview = document.getElementById('imagePreview');
             imgPreview.src = currentImageBase64; 
             imgPreview.classList.remove('hidden');
+            setStatus('statusImage', 'รูปภาพ: พร้อม', 'green');
             
             document.getElementById('gradeResult').classList.remove('hidden');
             document.getElementById('gradeLevel').innerText = "กำลังใช้ AI วิเคราะห์...";
+            setStatus('statusAi', 'AI: กำลังวิเคราะห์', 'amber');
             if (aiModel) {
               setTimeout(async () => {
                 const predictions = await aiModel.predict(imgPreview);
                 let bestClass = predictions.reduce((p, c) => p.probability > c.probability ? p : c);
+                currentAiLabel = bestClass.className;
+                currentAiConfidence = Number(bestClass.probability.toFixed(4));
                 document.getElementById('gradeLevel').innerText = `ระดับ ${bestClass.className} (${(bestClass.probability*100).toFixed(0)}%)`;
+                setStatus('statusAi', `AI: ${Math.round(bestClass.probability * 100)}%`, 'green');
               }, 500);
+            } else {
+              setStatus('statusAi', 'AI: โหลดโมเดลไม่สำเร็จ', 'amber');
             }
           }
         }
@@ -281,9 +384,14 @@
       
       const formData = { 
         farmName: form.farmName.value, plantArea: form.plantArea.value, 
+        variety: form.variety.value, plantDensity: form.plantDensity.value,
         plantingDate: form.plantingDate.value, forcingDate: form.forcingDate.value, 
         soilDrainage: form.soilDrainage.value, latitude: form.latitude.value, 
-        longitude: form.longitude.value, aiAnalysis: aiResult,
+        longitude: form.longitude.value, soilType: form.soilType.value,
+        irrigation: form.irrigation.value, drainageScore: form.drainageScore.value,
+        notes: form.notes.value, aiAnalysis: aiResult,
+        aiLabel: currentAiLabel,
+        aiConfidence: currentAiConfidence,
         imageBase64: currentImageBase64 // แนบรูปภาพ Base64 ไปด้วย
       };
       
@@ -291,9 +399,12 @@
       callAppsScript('saveData', formData).then(res => {
         if(res.success) { 
           Swal.fire('สำเร็จ!', res.message, 'success'); 
-          form.reset(); currentImageBase64 = ""; 
+          form.reset(); currentImageBase64 = ""; currentAiLabel = ""; currentAiConfidence = "";
           if(marker) map.removeLayer(marker); 
           document.getElementById('imagePreview').classList.add('hidden'); 
+          setStatus('statusLocation', 'พิกัด: ยังไม่พร้อม', 'gray');
+          setStatus('statusImage', 'รูปภาพ: ยังไม่มี', 'gray');
+          setStatus('statusAi', 'AI: รอวิเคราะห์', 'gray');
         } else {
           showApiError(res, 'บันทึกข้อมูลไม่สำเร็จ');
         }
@@ -322,6 +433,12 @@
       document.getElementById('kpiArea').innerText = data.totalArea.toFixed(1);
       document.getElementById('kpiBrix').innerText = data.countBrix > 0 ? (data.totalBrix / data.countBrix).toFixed(1) + '°' : '0°';
       document.getElementById('kpiRevenue').innerText = '฿' + data.totalRevenue.toLocaleString('th-TH', {maximumFractionDigits: 0});
+      document.getElementById('urgentCount').innerText = (data.urgentTasks || []).length;
+      document.getElementById('harvestSoonCount').innerText = (data.harvestSoon || []).length;
+      document.getElementById('noPhotoCount').innerText = (data.noPhoto || []).length;
+      document.getElementById('urgentHint').innerText = (data.urgentTasks || [])[0]?.farmName || 'ไม่มีแปลงเสี่ยงสูง';
+      document.getElementById('harvestSoonHint').innerText = (data.harvestSoon || [])[0] ? `${data.harvestSoon[0].farmName} อีก ${data.harvestSoon[0].daysToHarvest} วัน` : 'ยังไม่มีรายการ';
+      document.getElementById('noPhotoHint').innerText = (data.noPhoto || [])[0]?.farmName || 'ครบถ้วนดี';
 
       let labelsYield = Object.keys(data.monthlyYields);
       let valuesYield = Object.values(data.monthlyYields);
@@ -472,19 +589,180 @@
               <span>🍍 ${farm.name}</span>
               <span class="text-sm font-normal px-2 py-1 bg-green-100 text-green-700 rounded-md">ID: ${farm.id}</span>
             </h4>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button onclick="openEditFarmModal(${farm.rowNumber})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition">แก้ไข</button>
+              <button onclick="deleteFarm(${farm.rowNumber})" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition">ลบ</button>
+            </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">พื้นที่ (ไร่)</p><p class="text-xl font-bold text-gray-800">${farm.area}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">พันธุ์</p><p class="text-xl font-bold text-gray-800">${farm.variety || '-'}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ต้น/ไร่</p><p class="text-xl font-bold text-gray-800">${farm.plantDensity || '-'}</p></div>
               <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ผลผลิต (ตัน)</p><p class="text-xl font-bold text-green-600">${farm.yield}</p></div>
               <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ความหวาน</p><p class="text-xl font-bold text-orange-500">${farm.brix}°</p></div>
               <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">น้ำหนัก (กก.)</p><p class="text-xl font-bold text-gray-800">${farm.weight}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">ดิน/น้ำ</p><p class="text-sm font-bold text-gray-800">${farm.soilType || '-'} / ${farm.irrigation || '-'}</p></div>
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm"><p class="text-xs text-gray-500 mb-1">เก็บเกี่ยว</p><p class="text-sm font-bold text-gray-800">${farm.harvestDate || '-'}</p></div>
               <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 shadow-sm col-span-2 md:col-span-4 flex justify-between items-center">
                 <p class="text-sm text-blue-700 font-bold">💰 รายได้คาดการณ์</p>
                 <p class="text-2xl font-bold text-blue-700">฿${farm.revenue.toLocaleString('th-TH')}</p>
               </div>
+              <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm col-span-2 md:col-span-4">
+                <p class="text-xs text-gray-500 mb-1">หมายเหตุ</p>
+                <p class="text-sm text-gray-700">${farm.notes || '-'}</p>
+              </div>
             </div>
           </div>
         </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">หมายเหตุแปลง</label>
+          <textarea name="notes" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none" placeholder="เช่น ปุ๋ยที่ใช้ ปัญหาในแปลง หรือข้อสังเกต"></textarea>
+        </div>
       `;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function toDateInputValue(value) {
+      if (!value) return '';
+      const text = String(value);
+      const parts = text.split('/');
+      if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+      return '';
+    }
+
+    function normalizeSoilDrainage(value) {
+      const text = String(value || '').toLowerCase();
+      if (text.includes('poor') || text.includes('แย่')) return 'poor';
+      if (text.includes('moderate') || text.includes('ปานกลาง')) return 'moderate';
+      return 'good';
+    }
+
+    function getFarmByRow(rowNumber) {
+      return allFarmsData.find(f => String(f.rowNumber) === String(rowNumber));
+    }
+
+    function editField(label, id, type, value, attrs = '') {
+      return `
+        <label class="block text-left text-xs font-bold text-gray-600 mt-3 mb-1">${label}</label>
+        <input id="${id}" type="${type}" value="${escapeHtml(value)}" ${attrs}
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+      `;
+    }
+
+    function openEditFarmModal(rowNumber) {
+      const farm = getFarmByRow(rowNumber);
+      if (!farm) return;
+
+      const soilValue = normalizeSoilDrainage(farm.soilDrainage);
+      Swal.fire({
+        title: 'แก้ไขข้อมูลแปลง',
+        width: 720,
+        html: `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+            <div>${editField('ชื่อแปลง / เกษตรกร', 'editFarmName', 'text', farm.name, 'required')}</div>
+            <div>${editField('พื้นที่ปลูก (ไร่)', 'editPlantArea', 'number', farm.area, 'step="0.1" min="0.1" required')}</div>
+            <div>${editField('พันธุ์สับปะรด', 'editVariety', 'text', farm.variety || '')}</div>
+            <div>${editField('จำนวนต้นต่อไร่', 'editPlantDensity', 'number', farm.plantDensity || 7000, 'min="1"')}</div>
+            <div>${editField('วันที่เริ่มปลูก', 'editPlantingDate', 'date', toDateInputValue(farm.plantingDate), 'required')}</div>
+            <div>${editField('วันที่บังคับดอก', 'editForcingDate', 'date', toDateInputValue(farm.forcingDate), 'required')}</div>
+            <div>
+              <label class="block text-left text-xs font-bold text-gray-600 mt-3 mb-1">สภาพการระบายน้ำ</label>
+              <select id="editSoilDrainage" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <option value="good" ${soilValue === 'good' ? 'selected' : ''}>ดี</option>
+                <option value="moderate" ${soilValue === 'moderate' ? 'selected' : ''}>ปานกลาง</option>
+                <option value="poor" ${soilValue === 'poor' ? 'selected' : ''}>แย่</option>
+              </select>
+            </div>
+            <div>${editField('ประเภทดิน', 'editSoilType', 'text', farm.soilType || '')}</div>
+            <div>${editField('ระบบน้ำ', 'editIrrigation', 'text', farm.irrigation || '')}</div>
+            <div>${editField('คะแนนระบายน้ำ (1-5)', 'editDrainageScore', 'number', farm.drainageScore || 3, 'min="1" max="5"')}</div>
+            <div>${editField('ผลวิเคราะห์ AI', 'editAiAnalysis', 'text', farm.aiAnalysis || '')}</div>
+            <div>${editField('Latitude', 'editLatitude', 'number', farm.lat, 'step="0.000001" required')}</div>
+            <div>${editField('Longitude', 'editLongitude', 'number', farm.lng, 'step="0.000001" required')}</div>
+            <div class="md:col-span-2">
+              <label class="block text-left text-xs font-bold text-gray-600 mt-3 mb-1">หมายเหตุ</label>
+              <textarea id="editNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">${escapeHtml(farm.notes || '')}</textarea>
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#16a34a',
+        preConfirm: () => {
+          const popup = Swal.getPopup();
+          const formData = {
+            farmName: popup.querySelector('#editFarmName').value,
+            plantArea: popup.querySelector('#editPlantArea').value,
+            variety: popup.querySelector('#editVariety').value,
+            plantDensity: popup.querySelector('#editPlantDensity').value,
+            plantingDate: popup.querySelector('#editPlantingDate').value,
+            forcingDate: popup.querySelector('#editForcingDate').value,
+            soilDrainage: popup.querySelector('#editSoilDrainage').value,
+            soilType: popup.querySelector('#editSoilType').value,
+            irrigation: popup.querySelector('#editIrrigation').value,
+            drainageScore: popup.querySelector('#editDrainageScore').value,
+            latitude: popup.querySelector('#editLatitude').value,
+            longitude: popup.querySelector('#editLongitude').value,
+            notes: popup.querySelector('#editNotes').value,
+            aiAnalysis: popup.querySelector('#editAiAnalysis').value || farm.aiAnalysis || '',
+            aiLabel: farm.aiLabel || '',
+            aiConfidence: farm.aiConfidence || '',
+            imageBase64: ''
+          };
+          if (!formData.farmName || !formData.plantArea || !formData.plantingDate || !formData.forcingDate) {
+            Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบ');
+            return false;
+          }
+          return formData;
+        }
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        Swal.fire({ title: 'กำลังอัปเดตข้อมูล...', didOpen: () => Swal.showLoading() });
+        callAppsScript('updateData', { rowNumber, formData: result.value }).then(res => {
+          if (res.success) {
+            Swal.fire('สำเร็จ!', res.message, 'success');
+            loadDashboard();
+          } else {
+            showApiError(res, 'อัปเดตข้อมูลไม่สำเร็จ');
+          }
+        }).catch(err => showApiError({ message: err.toString() }, 'อัปเดตข้อมูลไม่สำเร็จ'));
+      });
+    }
+
+    function deleteFarm(rowNumber) {
+      const farm = getFarmByRow(rowNumber);
+      if (!farm) return;
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'ลบข้อมูลแปลงนี้?',
+        text: farm.name,
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc2626'
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        Swal.fire({ title: 'กำลังลบข้อมูล...', didOpen: () => Swal.showLoading() });
+        callAppsScript('deleteData', { rowNumber }).then(res => {
+          if (res.success) {
+            Swal.fire('สำเร็จ!', res.message, 'success');
+            loadDashboard();
+          } else {
+            showApiError(res, 'ลบข้อมูลไม่สำเร็จ');
+          }
+        }).catch(err => showApiError({ message: err.toString() }, 'ลบข้อมูลไม่สำเร็จ'));
+      });
     }
   </script>
 </body>
