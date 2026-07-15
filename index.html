@@ -21,6 +21,7 @@
       --gold: #ffd319;
       --olive: #867600;
       --ink: #0f1f1a;
+      --field-monitor-min-height: 560px;
     }
     * { box-sizing: border-box; }
     html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
@@ -44,17 +45,29 @@
     .dashboard-map-tool { width: 46px; height: 46px; border-radius: 12px; background: white; font-size: 24px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,.16); }
     .dashboard-map-status { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 500; max-width: min(90%, 520px); background: rgba(255,255,255,.9); border-radius: 999px; padding: 10px 16px; font-weight: 700; color: #315447; box-shadow: 0 10px 30px rgba(0, 40, 24, .12); }
     .dashboard-map-status.hidden { display: none; }
-    .yield-panel { min-height: 420px; overflow: hidden; }
-    .chart-frame { height: 320px; min-height: 320px; position: relative; }
+    .yield-panel { min-height: 430px; overflow: hidden; }
+    .chart-frame { height: 330px; min-height: 330px; position: relative; }
     .chart-frame canvas { display: block; width: 100% !important; height: 100% !important; }
-    .top-harvest-panel { min-height: 420px; display: flex; flex-direction: column; }
+    .top-harvest-panel { min-height: 300px; display: flex; flex-direction: column; }
     .top-harvest-scroll { flex: 1; overflow: auto; padding-right: 4px; }
-    .pineapple-field { min-height: 440px; background-image: linear-gradient(rgba(0,55,36,.12), rgba(0,55,36,.08)), url('https://images.unsplash.com/photo-1589820296156-2454bb8a6ad1?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center; border-radius: 14px; position: relative; overflow: hidden; }
+    .pineapple-field { height: 100%; min-height: var(--field-monitor-min-height); background-image: linear-gradient(rgba(0,55,36,.12), rgba(0,55,36,.08)), url('https://images.unsplash.com/photo-1589820296156-2454bb8a6ad1?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center; border-radius: 14px; position: relative; overflow: hidden; }
+    .field-monitor-shell { position: relative; height: 100%; min-height: var(--field-monitor-min-height); }
+    .field-view { display: none; }
+    .field-view.active { display: block; height: 100%; }
+    .field-toolbar { position: absolute; left: 18px; top: 18px; z-index: 600; display: grid; gap: 8px; background: rgba(255,255,255,.76); backdrop-filter: blur(10px); border-radius: 12px; padding: 8px; box-shadow: 0 12px 30px rgba(0, 40, 24, .14); }
+    .field-tool-btn { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; color: #315447; font-weight: 900; transition: .16s ease; }
+    .field-tool-btn:hover, .field-tool-btn.active { background: var(--pine); color: white; }
+    #fieldLeafletMap { height: 100%; min-height: var(--field-monitor-min-height); border-radius: 14px; z-index: 1; border: 1px solid #dfe9dd; }
+    .field-hotspot { position: absolute; width: 30px; height: 30px; border-radius: 999px; border: 4px solid #fff; box-shadow: 0 12px 26px rgba(0,0,0,.22); display: grid; place-items: center; color: white; font-size: 13px; font-weight: 900; transform: translate(-50%, -50%); cursor: pointer; }
+    .field-hotspot::after { content: ''; position: absolute; inset: -9px; border-radius: 999px; border: 2px solid currentColor; opacity: .32; }
+    .field-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; background: #eef5ec; color: #164d3d; font-weight: 800; font-size: 12px; }
     .map-pin { position: absolute; width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #cf1f1f; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
     .map-pin::after { content: ''; position: absolute; inset: 8px; border-radius: 50%; background: rgba(255,255,255,.4); }
     .status-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
     .ring { width: 210px; height: 210px; border-radius: 50%; background: conic-gradient(var(--pine) 0 64%, var(--olive) 64% 82%, #cc1919 82% 100%); display: grid; place-items: center; }
     .ring-inner { width: 138px; height: 138px; border-radius: 50%; background: #fff; display: grid; place-items: center; text-align: center; }
+    .risk-ring { width: 190px; height: 190px; }
+    .risk-ring .ring-inner { width: 124px; height: 124px; }
     .quality-ring { width: 220px; height: 220px; border-radius: 50%; background: conic-gradient(var(--gold) 0 72%, rgba(255,255,255,.18) 72% 100%); display: grid; place-items: center; margin: auto; }
     .quality-ring-inner { width: 128px; height: 128px; border-radius: 50%; background: var(--pine); display: grid; place-items: center; color: white; text-align: center; }
     .form-input, .form-select, .form-textarea { width: 100%; border: 1px solid #d7e3d5; border-radius: 10px; padding: 10px 12px; outline: none; background: white; }
@@ -62,6 +75,7 @@
     #formMap, #riskLeafletMap { height: 360px; border-radius: 14px; z-index: 1; }
     .sample-img { height: 155px; object-fit: cover; width: 100%; border-radius: 10px; background: #edf2eb; }
     @media (max-width: 980px) {
+      :root { --field-monitor-min-height: 560px; }
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: static; height: auto; }
       .nav-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -106,7 +120,7 @@
           <p class="text-xl text-gray-700 mt-3 max-w-3xl">National Pineapple Yield Forecast & Regional Health Monitoring Dashboard.</p>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-7">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6">
           <div class="space-y-7">
             <div class="dashboard-map-card">
               <div id="dashboardLeafletMap"></div>
@@ -123,7 +137,7 @@
               <div id="dashboardMapStatus" class="dashboard-map-status hidden"></div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-[1.35fr_.95fr] gap-7 items-stretch">
+            <div class="space-y-6">
               <div class="soft-card p-7 yield-panel">
                 <div class="flex justify-between gap-4">
                   <div>
@@ -143,17 +157,17 @@
                   <h3 class="text-2xl font-extrabold">Top Harvest Areas</h3>
                   <button class="text-2xl">...</button>
                 </div>
-                <div id="topHarvestList" class="top-harvest-scroll space-y-4"></div>
+                <div id="topHarvestList" class="top-harvest-scroll grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
                 <button onclick="switchPage('gradingPage')" class="mt-8 w-full bg-[var(--pine)] text-white rounded-xl py-4 font-extrabold text-lg">New Analysis Report</button>
               </div>
             </div>
           </div>
 
           <div class="space-y-7">
-            <div class="soft-card p-8">
+            <div class="soft-card p-6">
               <h3 class="text-2xl font-extrabold">สถานะความเสี่ยง</h3>
               <p class="text-gray-600">Regional Health Distribution</p>
-              <div class="ring mx-auto my-9">
+              <div class="ring risk-ring mx-auto my-7">
                 <div class="ring-inner">
                   <div>
                     <p id="healthScore" class="text-4xl font-extrabold">0%</p>
@@ -174,7 +188,7 @@
               <button onclick="switchPage('riskPage')" class="mt-6 bg-[var(--gold)] text-black rounded-xl py-4 px-5 font-extrabold w-full">Generate Field Task</button>
             </div>
 
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-3 gap-3">
               <div class="metric-card"><p class="text-xs font-bold text-gray-500">Plots</p><p id="plotCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
               <div class="metric-card"><p class="text-xs font-bold text-gray-500">Area</p><p id="areaCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
               <div class="metric-card"><p class="text-xs font-bold text-gray-500">Brix</p><p id="brixCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
@@ -188,19 +202,29 @@
           <div>
             <p class="text-sm text-gray-500">Thailand › Prachuap Khiri Khan › Sector A-14</p>
             <h2 class="text-4xl font-extrabold text-[var(--pine)]">Field Monitoring</h2>
+            <p id="selectedFarmName" class="text-gray-600 mt-2 font-bold">เลือกแปลงบนแผนที่เพื่อดูรายละเอียด</p>
           </div>
           <button onclick="loadDashboard()" class="bg-[var(--gold)] rounded-lg px-6 py-3 font-extrabold">Update Field Data</button>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_330px] gap-7">
-          <div class="pineapple-field">
-            <div class="absolute left-5 top-5 bg-white/75 rounded-lg p-3 grid gap-3 text-center font-bold">
-              <span>▣</span><span>⊙</span><span>⌕</span>
+          <div class="field-monitor-shell">
+            <div class="field-toolbar" aria-label="Field view tools">
+              <button type="button" id="fieldMapModeBtn" onclick="setFieldViewMode('map')" class="field-tool-btn active" title="Map View">▣</button>
+              <button type="button" id="fieldImageModeBtn" onclick="setFieldViewMode('image')" class="field-tool-btn" title="Image View">⊙</button>
+              <button type="button" onclick="selectedFieldFarm = null; renderFieldPage({ farms: allFarmsData });" class="field-tool-btn" title="Show all plots">⌕</button>
             </div>
-            <div id="fieldMarkers"></div>
-            <div class="absolute bottom-5 left-5 flex gap-2 bg-white/80 p-3 rounded-lg text-sm font-bold">
-              <span><i class="status-dot bg-[var(--pine)] mr-1"></i>Optimal</span>
-              <span><i class="status-dot bg-[var(--olive)] mr-1"></i>Stressed</span>
-              <span><i class="status-dot bg-red-600 mr-1"></i>Critical</span>
+            <div id="fieldMapView" class="field-view active">
+              <div id="fieldLeafletMap"></div>
+            </div>
+            <div id="fieldImageView" class="field-view">
+              <div id="fieldImagePanel" class="pineapple-field">
+                <div id="fieldMarkers"></div>
+                <div class="absolute bottom-5 left-5 flex gap-2 bg-white/80 p-3 rounded-lg text-sm font-bold">
+                  <span><i class="status-dot bg-[var(--pine)] mr-1"></i>Optimal</span>
+                  <span><i class="status-dot bg-[var(--olive)] mr-1"></i>Stressed</span>
+                  <span><i class="status-dot bg-red-600 mr-1"></i>Critical</span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="space-y-5">
@@ -215,6 +239,10 @@
               <div class="grid grid-cols-2 gap-4 mt-5">
                 <div><p class="text-xs text-gray-300">Brix Forecast</p><p id="fieldBrix" class="text-2xl font-bold">0</p></div>
                 <div><p class="text-xs text-gray-300">Grade Proj.</p><p id="fieldGrade" class="text-2xl font-bold">-</p></div>
+              </div>
+              <div class="mt-5 bg-white/8 rounded-xl p-4">
+                <p class="text-xs text-gray-300 uppercase font-extrabold">Recommended Action</p>
+                <p id="fieldAction" class="text-lg font-extrabold mt-2">เลือกแปลงเพื่อดูคำแนะนำ</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -234,6 +262,7 @@
         <div class="soft-card p-7 mt-7">
           <h3 class="text-2xl font-extrabold text-[var(--pine)]">Cultivar Intelligence</h3>
           <p id="cultivarInsight" class="text-gray-700 mt-2">เลือกหรือเพิ่มข้อมูลแปลงเพื่อดูคำแนะนำพันธุ์และคุณภาพ</p>
+          <div id="cultivarActions" class="mt-5 flex flex-wrap gap-2"></div>
         </div>
       </section>
 
@@ -407,6 +436,8 @@
     let formMap;
     let formMarker;
     let dashboardMap;
+    let fieldMap;
+    let selectedFieldFarm = null;
     let riskMap;
     let currentImageBase64 = "";
     let currentAiLabel = "";
@@ -430,6 +461,7 @@
       setTimeout(() => {
         if (pageId === 'registerPage' && formMap) formMap.invalidateSize();
         if (pageId === 'dashboardPage' && dashboardMap) dashboardMap.invalidateSize();
+        if (pageId === 'fieldPage' && fieldMap) fieldMap.invalidateSize();
         if (pageId === 'riskPage') renderRiskMap();
       }, 120);
     }
@@ -531,7 +563,7 @@
           Risk: ${escapeHtml(farm.risk || '-')}<br>
           Yield: ${numberFormat(farm.yield, 1)} MT
         `);
-        marker.on('click', () => { switchPage('fieldPage'); renderFieldPage({ farms: [farm] }); });
+        marker.on('click', () => { selectedFieldFarm = farm; switchPage('fieldPage'); renderFieldPage({ farms: allFarmsData }); });
       });
 
       const status = document.getElementById('dashboardMapStatus');
@@ -654,24 +686,187 @@
     }
 
     function renderFieldPage(data) {
-      const farm = (data.farms || allFarmsData || [])[0];
-      const markers = document.getElementById('fieldMarkers');
-      markers.innerHTML = '';
-      (data.farms || allFarmsData || []).slice(0, 6).forEach((item, index) => {
-        const marker = document.createElement('button');
-        marker.className = 'absolute w-7 h-7 rounded-full border-4 border-white shadow-lg';
-        marker.style.left = `${24 + ((index * 19) % 56)}%`;
-        marker.style.top = `${28 + ((index * 13) % 48)}%`;
-        marker.style.background = item.risk === 'High' ? '#cf1f1f' : item.risk === 'Medium' ? '#867600' : '#003f2a';
-        marker.onclick = () => focusFarm(item.rowNumber);
-        markers.appendChild(marker);
+      const farms = data.farms || allFarmsData || [];
+      const farm = farms.find(item => selectedFieldFarm && String(item.rowNumber) === String(selectedFieldFarm.rowNumber)) || farms[0];
+      selectedFieldFarm = farm || null;
+
+      renderFieldMap(farms, farm);
+      renderFieldImageOverlay(farms, farm);
+      renderFieldDetails(farm);
+    }
+
+    function initFieldMap() {
+      const mapEl = document.getElementById('fieldLeafletMap');
+      if (!mapEl || !window.L || fieldMap) return fieldMap;
+
+      fieldMap = L.map('fieldLeafletMap', { zoomControl: true, preferCanvas: true }).setView([13.2, 101.0], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 19
+      }).addTo(fieldMap);
+      fieldMap.farmLayer = L.layerGroup().addTo(fieldMap);
+      return fieldMap;
+    }
+
+    function renderFieldMap(farms, selectedFarm) {
+      const map = initFieldMap();
+      if (!map) return;
+      if (map.farmLayer) map.removeLayer(map.farmLayer);
+      map.farmLayer = L.layerGroup().addTo(map);
+
+      const points = farms.map(farm => {
+        const latlng = getFarmLatLng(farm);
+        return latlng ? { ...farm, lat: latlng.lat, lng: latlng.lng } : null;
+      }).filter(Boolean);
+
+      points.forEach(farm => {
+        const isSelected = selectedFarm && String(farm.rowNumber) === String(selectedFarm.rowNumber);
+        const color = getRiskColor(farm.risk);
+        const marker = L.circleMarker([farm.lat, farm.lng], {
+          radius: isSelected ? 12 : 8,
+          color: isSelected ? '#ffd319' : '#ffffff',
+          weight: isSelected ? 4 : 3,
+          fillColor: color,
+          fillOpacity: 1
+        }).addTo(map.farmLayer);
+        marker.bindPopup(`
+          <strong>${escapeHtml(farm.name || 'Farm')}</strong><br>
+          ${escapeHtml(farm.variety || 'ไม่ระบุพันธุ์')}<br>
+          Risk: ${escapeHtml(farm.risk || '-')}<br>
+          Action: ${escapeHtml(getRecommendedAction(farm))}
+        `);
+        marker.on('click', () => {
+          selectedFieldFarm = farm;
+          renderFieldPage({ farms: allFarmsData });
+        });
       });
-      if (!farm) return;
+
+      setTimeout(() => {
+        map.invalidateSize();
+        if (points.length) {
+          const selectedPoint = selectedFarm ? points.find(farm => String(farm.rowNumber) === String(selectedFarm.rowNumber)) : null;
+          if (selectedPoint) map.setView([selectedPoint.lat, selectedPoint.lng], Math.max(map.getZoom(), 12));
+          else map.fitBounds(points.map(farm => [farm.lat, farm.lng]), { padding: [46, 46], maxZoom: 11 });
+        }
+      }, 120);
+    }
+
+    function renderFieldImageOverlay(farms, selectedFarm) {
+      const panel = document.getElementById('fieldImagePanel');
+      const markers = document.getElementById('fieldMarkers');
+      if (!panel || !markers) return;
+      markers.innerHTML = '';
+
+      const image = safeImage(selectedFarm?.photo || '');
+      panel.style.backgroundImage = `linear-gradient(rgba(0,55,36,.12), rgba(0,55,36,.08)), url('${image}')`;
+
+      const items = selectedFarm ? [selectedFarm] : farms.slice(0, 4);
+      items.forEach((item, index) => {
+        const hotspot = document.createElement('button');
+        const risk = normalizeClientRisk(item.risk || item.riskText);
+        const color = getRiskColor(risk);
+        hotspot.className = 'field-hotspot';
+        hotspot.style.left = `${28 + ((index * 23) % 46)}%`;
+        hotspot.style.top = `${32 + ((index * 17) % 42)}%`;
+        hotspot.style.background = color;
+        hotspot.style.color = color;
+        hotspot.innerHTML = risk === 'High' ? '!' : risk === 'Medium' ? '?' : '✓';
+        hotspot.title = `${item.name || 'Farm'}: ${getRecommendedAction(item)}`;
+        hotspot.onclick = () => {
+          selectedFieldFarm = item;
+          renderFieldPage({ farms: allFarmsData });
+        };
+        markers.appendChild(hotspot);
+      });
+    }
+
+    function renderFieldDetails(farm) {
+      if (!farm) {
+        setText('selectedFarmName', 'เลือกแปลงบนแผนที่เพื่อดูรายละเอียด');
+        setText('fieldHarvestDate', '-');
+        setText('fieldHarvestDays', '-');
+        setText('fieldBrix', '-');
+        setText('fieldGrade', '-');
+        setText('fieldAction', 'เพิ่มข้อมูลแปลงพร้อมพิกัดเพื่อเริ่มติดตาม');
+        setText('cultivarInsight', 'เลือกหรือเพิ่มข้อมูลแปลงเพื่อดูคำแนะนำพันธุ์และคุณภาพ');
+        document.getElementById('cultivarActions').innerHTML = '';
+        return;
+      }
+
+      const advice = buildCultivarAdvice(farm);
+      setText('selectedFarmName', `${farm.name || 'ไม่ระบุชื่อแปลง'} • ${farm.variety || 'ไม่ระบุพันธุ์'} • ${farm.risk || '-'}`);
       setText('fieldHarvestDate', farm.harvestDate || '-');
       setText('fieldHarvestDays', farm.daysToHarvest !== null && farm.daysToHarvest !== undefined ? `${farm.daysToHarvest} Days Remaining` : '-');
       setText('fieldBrix', farm.brix ? `${farm.brix} °Bx` : '-');
       setText('fieldGrade', shortGrade(farm.grade));
-      setText('cultivarInsight', `${farm.variety || 'ไม่ระบุพันธุ์'} แสดงผลผลิตคาดการณ์ ${numberFormat(farm.yield, 1)} ตัน ความหวาน ${farm.brix || '-'} Brix และความเสี่ยง ${farm.riskText || farm.risk}`);
+      setText('fieldAction', advice.action);
+      setText('cultivarInsight', advice.summary);
+      document.getElementById('cultivarActions').innerHTML = advice.tags.map(tag => `<span class="field-chip">${escapeHtml(tag)}</span>`).join('');
+    }
+
+    function setFieldViewMode(mode) {
+      const isMap = mode === 'map';
+      document.getElementById('fieldMapView')?.classList.toggle('active', isMap);
+      document.getElementById('fieldImageView')?.classList.toggle('active', !isMap);
+      document.getElementById('fieldMapModeBtn')?.classList.toggle('active', isMap);
+      document.getElementById('fieldImageModeBtn')?.classList.toggle('active', !isMap);
+      if (isMap && fieldMap) setTimeout(() => fieldMap.invalidateSize(), 80);
+    }
+
+    function normalizeClientRisk(value) {
+      const text = String(value || '').toLowerCase();
+      if (text.includes('high') || text.includes('สูง')) return 'High';
+      if (text.includes('medium') || text.includes('ปานกลาง')) return 'Medium';
+      return 'Low';
+    }
+
+    function getRiskColor(value) {
+      const risk = normalizeClientRisk(value);
+      if (risk === 'High') return '#cf1f1f';
+      if (risk === 'Medium') return '#867600';
+      return '#003f2a';
+    }
+
+    function getRecommendedAction(farm) {
+      const risk = normalizeClientRisk(farm.risk || farm.riskText);
+      const drainage = String(farm.soilDrainage || '').toLowerCase();
+      const brix = Number(farm.brix || 0);
+      const days = Number(farm.daysToHarvest);
+
+      if (risk === 'High') return 'ตรวจโรครากเน่า/ยอดเน่าและการระบายน้ำภายใน 48 ชั่วโมง';
+      if (drainage.includes('poor') || drainage.includes('แย่')) return 'เปิดทางระบายน้ำ ลดน้ำขัง และสำรวจโคนต้น';
+      if (isFinite(days) && days >= 0 && days <= 14) return 'สุ่มวัด Brix และจัดแผนแรงงานเก็บเกี่ยว';
+      if (brix > 0 && brix < 13) return 'ติดตามความหวานก่อนเก็บเกี่ยว และทบทวนแผนปุ๋ยโพแทสเซียม';
+      if (risk === 'Medium') return 'เฝ้าระวังความชื้นและตรวจซ้ำใน 3-5 วัน';
+      return 'ติดตามตามรอบปกติ และบันทึกภาพล่าสุดเพื่อใช้เทียบแนวโน้ม';
+    }
+
+    function buildCultivarAdvice(farm) {
+      const variety = String(farm.variety || 'ไม่ระบุพันธุ์');
+      const risk = normalizeClientRisk(farm.risk || farm.riskText);
+      const brix = Number(farm.brix || 0);
+      const grade = shortGrade(farm.grade);
+      const action = getRecommendedAction(farm);
+      const yieldText = numberFormat(farm.yield, 1);
+      const tags = [variety, grade || 'ยังไม่คัดเกรด', `Risk: ${risk}`];
+
+      let marketHint = 'เหมาะติดตามคุณภาพต่อเนื่องก่อนตัดสินใจตลาดปลายทาง';
+      if (variety.toLowerCase().includes('md2')) {
+        marketHint = brix >= 14 ? 'MD2 มีโอกาสรักษาตลาดผลสด/พรีเมียม หากควบคุมความชื้นได้' : 'MD2 ควรเร่งติดตาม Brix เพื่อรักษาโอกาส Grade A';
+        tags.push('Fresh Market Focus');
+      } else if (variety.includes('ปัตตาเวีย')) {
+        marketHint = 'ปัตตาเวียเหมาะวางแผนส่งโรงงานหรือแปรรูป ควรเน้นน้ำหนักและรอบเก็บเกี่ยว';
+        tags.push('Factory Planning');
+      } else if (variety.includes('ภูแล')) {
+        marketHint = 'ภูแลควรเน้นคุณภาพผลสด สี และความสม่ำเสมอก่อนเก็บเกี่ยว';
+        tags.push('Premium Local');
+      }
+
+      if (brix >= 14) tags.push('Brix ดี');
+      else if (brix > 0) tags.push('ติดตาม Brix');
+
+      const summary = `${variety} แปลงนี้คาดผลผลิต ${yieldText} ตัน ระดับ ${grade || '-'} ความหวาน ${brix || '-'} Brix และความเสี่ยง ${risk}. ${marketHint}. คำแนะนำถัดไป: ${action}`;
+      return { summary, action, tags };
     }
 
     function renderRiskPage(data) {
@@ -910,8 +1105,9 @@
     function focusFarm(rowNumber) {
       const farm = allFarmsData.find(f => String(f.rowNumber) === String(rowNumber));
       if (!farm) return;
+      selectedFieldFarm = farm;
       switchPage('fieldPage');
-      renderFieldPage({ farms: [farm] });
+      renderFieldPage({ farms: allFarmsData });
     }
 
     function exportAlertsCsv() {

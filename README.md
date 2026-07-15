@@ -33,6 +33,7 @@ Browser -> Vercel /api/apps-script -> Google Apps Script -> Google Sheet / Googl
 - เก็บผล AI label/confidence เพิ่มเติม
 - เพิ่ม UX: ใช้ตำแหน่งปัจจุบัน, สถานะฟอร์ม, งานด่วนวันนี้, ใกล้เก็บเกี่ยว 14 วัน, และแปลงที่ยังไม่มีรูป
 - เพิ่ม data model: Variety, Plant Density, Soil Type, Irrigation, Drainage Score, Notes, Actual Harvest Date, Actual Yield, Actual Brix, Actual Grade, Disease Observed
+- เพิ่ม weather feature columns สำหรับฝึก ML: rain forecast, humidity, temperature, leaf wetness, drought score, disease weather score, weather stress score, weather impact factor
 
 ## 1. ตั้งค่า Google Apps Script
 

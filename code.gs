@@ -33,7 +33,24 @@ const FARM_HEADERS = [
   'Actual Yield Ton',
   'Actual Brix',
   'Actual Grade',
-  'Disease Observed'
+  'Disease Observed',
+  'Weather Retrieved At',
+  'Weather Source',
+  'Rain 24h mm',
+  'Rain 72h mm',
+  'Rain 120h mm',
+  'Humidity Avg %',
+  'Humidity Max %',
+  'Temp Avg C',
+  'Temp Min C',
+  'Temp Max C',
+  'Leaf Wetness Hours',
+  'Heavy Rain Events',
+  'Dry Forecast Slots',
+  'Weather Stress Score',
+  'Drought Score',
+  'Disease Weather Score',
+  'Weather Impact Factor'
 ];
 
 const LOG_HEADERS = ['Timestamp', 'Action', 'Success', 'Message', 'Detail'];
@@ -196,16 +213,17 @@ function calculateFarmRecord(formObj, existingPhotoUrl) {
   const formattedHarvestDate = Utilities.formatDate(expectedHarvestDate, Session.getScriptTimeZone(), 'dd/MM/yyyy');
 
   const areaRai = parseFloat(formObj.plantArea);
-  const riskData = checkDiseaseRisk(formObj.latitude, formObj.longitude, formObj.soilDrainage);
+  const weatherFeatures = getWeatherFeatures(formObj.latitude, formObj.longitude);
+  const riskData = checkDiseaseRisk(formObj.latitude, formObj.longitude, formObj.soilDrainage, weatherFeatures);
   const harvestMonth = expectedHarvestDate.getMonth() + 1;
   const isOffSeason = harvestMonth >= 10 || harvestMonth <= 3;
   const seasonalMultiplier = isOffSeason ? 0.95 : 1.05;
   const isRainingHeavily = riskData.heavyRainCount >= 2;
   const isDrought = riskData.heavyRainCount === 0 && riskData.leafWetness === 0;
 
-  let weatherImpact = seasonalMultiplier;
-  if (isRainingHeavily) weatherImpact += 0.05;
-  else if (isDrought) weatherImpact -= 0.05;
+  let weatherImpact = seasonalMultiplier * weatherFeatures.weatherImpactFactor;
+  if (isRainingHeavily) weatherImpact += 0.03;
+  else if (isDrought) weatherImpact -= 0.03;
 
   let diseaseLoss = 0;
   if (riskData.normalizedRisk === 'High') diseaseLoss = 0.15;
@@ -306,7 +324,24 @@ function calculateFarmRecord(formObj, existingPhotoUrl) {
       actualYieldTon,
       actualBrix,
       actualGrade,
-      diseaseObserved
+      diseaseObserved,
+      weatherFeatures.retrievedAt,
+      weatherFeatures.source,
+      weatherFeatures.rain24hMm,
+      weatherFeatures.rain72hMm,
+      weatherFeatures.rain120hMm,
+      weatherFeatures.humidityAvg,
+      weatherFeatures.humidityMax,
+      weatherFeatures.tempAvgC,
+      weatherFeatures.tempMinC,
+      weatherFeatures.tempMaxC,
+      weatherFeatures.leafWetnessHours,
+      weatherFeatures.heavyRainEvents,
+      weatherFeatures.dryForecastSlots,
+      weatherFeatures.weatherStressScore,
+      weatherFeatures.droughtScore,
+      weatherFeatures.diseaseWeatherScore,
+      weatherFeatures.weatherImpactFactor
     ],
     harvestDate: formattedHarvestDate,
     yieldTon: totalYieldTon,
@@ -423,9 +458,128 @@ function saveImageToDrive(imageBase64, farmName) {
   }
 }
 
-function checkDiseaseRisk(lat, lon, soilDrainage) {
+function getEmptyWeatherFeatures(source, message) {
+  return {
+    retrievedAt: new Date(),
+    source: source || 'none',
+    message: message || '',
+    rain24hMm: 0,
+    rain72hMm: 0,
+    rain120hMm: 0,
+    humidityAvg: 0,
+    humidityMax: 0,
+    tempAvgC: 0,
+    tempMinC: 0,
+    tempMaxC: 0,
+    leafWetnessHours: 0,
+    heavyRainEvents: 0,
+    dryForecastSlots: 0,
+    weatherStressScore: 0,
+    droughtScore: 0,
+    diseaseWeatherScore: 0,
+    weatherImpactFactor: 1
+  };
+}
+
+function getWeatherFeatures(lat, lon) {
   const OPENWEATHER_API_KEY = getOpenWeatherApiKey();
   if (!OPENWEATHER_API_KEY) {
+    return getEmptyWeatherFeatures('missing_openweather_key', 'OPENWEATHER_API_KEY is not set');
+  }
+
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=th`;
+  try {
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const statusCode = response.getResponseCode ? response.getResponseCode() : 200;
+    const data = JSON.parse(response.getContentText());
+    if (statusCode >= 400 || !data.list || !Array.isArray(data.list)) {
+      return getEmptyWeatherFeatures('openweather_error', data.message || 'OpenWeather response has no forecast list');
+    }
+
+    const items = data.list.slice(0, 40);
+    let rain24h = 0;
+    let rain72h = 0;
+    let rain120h = 0;
+    let humiditySum = 0;
+    let humidityCount = 0;
+    let humidityMax = 0;
+    let tempSum = 0;
+    let tempCount = 0;
+    let tempMin = null;
+    let tempMax = null;
+    let leafWetnessHours = 0;
+    let heavyRainEvents = 0;
+    let dryForecastSlots = 0;
+
+    items.forEach((item, index) => {
+      const rain = item.rain && item.rain['3h'] ? Number(item.rain['3h']) : 0;
+      const humidity = item.main && item.main.humidity !== undefined ? Number(item.main.humidity) : null;
+      const temp = item.main && item.main.temp !== undefined ? Number(item.main.temp) : null;
+
+      if (index < 8) rain24h += rain;
+      if (index < 24) rain72h += rain;
+      rain120h += rain;
+
+      if (humidity !== null && isFinite(humidity)) {
+        humiditySum += humidity;
+        humidityCount++;
+        humidityMax = Math.max(humidityMax, humidity);
+      }
+
+      if (temp !== null && isFinite(temp)) {
+        tempSum += temp;
+        tempCount++;
+        tempMin = tempMin === null ? temp : Math.min(tempMin, temp);
+        tempMax = tempMax === null ? temp : Math.max(tempMax, temp);
+      }
+
+      if ((humidity !== null && humidity > 85) || rain > 0.5) leafWetnessHours += 3;
+      if (rain > 5) heavyRainEvents++;
+      if (rain < 0.1 && humidity !== null && humidity < 65) dryForecastSlots++;
+    });
+
+    const humidityAvg = humidityCount ? humiditySum / humidityCount : 0;
+    const tempAvgC = tempCount ? tempSum / tempCount : 0;
+    const droughtScore = Math.min(100, Math.round((dryForecastSlots / Math.max(items.length, 1)) * 100));
+    const diseaseWeatherScore = Math.min(100, Math.round((leafWetnessHours * 1.6) + (heavyRainEvents * 10) + (rain72h * 0.7)));
+    const weatherStressScore = Math.min(100, Math.round((Math.max(0, rain72h - 35) * 0.9) + (droughtScore * 0.35) + (Math.max(0, humidityAvg - 85) * 1.5)));
+
+    let weatherImpactFactor = 1;
+    if (diseaseWeatherScore >= 70) weatherImpactFactor -= 0.08;
+    else if (diseaseWeatherScore >= 45) weatherImpactFactor -= 0.04;
+    if (droughtScore >= 70) weatherImpactFactor -= 0.06;
+    else if (droughtScore >= 45) weatherImpactFactor -= 0.03;
+    if (rain72h >= 20 && rain72h <= 45 && droughtScore < 35) weatherImpactFactor += 0.02;
+    weatherImpactFactor = Math.max(0.82, Math.min(1.05, weatherImpactFactor));
+
+    return {
+      retrievedAt: new Date(),
+      source: 'openweather_forecast_5d_3h',
+      message: '',
+      rain24hMm: Number(rain24h.toFixed(2)),
+      rain72hMm: Number(rain72h.toFixed(2)),
+      rain120hMm: Number(rain120h.toFixed(2)),
+      humidityAvg: Number(humidityAvg.toFixed(1)),
+      humidityMax,
+      tempAvgC: Number(tempAvgC.toFixed(1)),
+      tempMinC: tempMin === null ? 0 : Number(tempMin.toFixed(1)),
+      tempMaxC: tempMax === null ? 0 : Number(tempMax.toFixed(1)),
+      leafWetnessHours,
+      heavyRainEvents,
+      dryForecastSlots,
+      weatherStressScore,
+      droughtScore,
+      diseaseWeatherScore,
+      weatherImpactFactor: Number(weatherImpactFactor.toFixed(3))
+    };
+  } catch (error) {
+    return getEmptyWeatherFeatures('openweather_fetch_error', error.toString());
+  }
+}
+
+function checkDiseaseRisk(lat, lon, soilDrainage, weatherFeatures) {
+  const features = weatherFeatures || getWeatherFeatures(lat, lon);
+  if (features.source === 'missing_openweather_key') {
     return {
       level: 'ไม่ทราบ',
       message: 'ยังไม่ได้ตั้งค่า OpenWeather API Key',
@@ -435,20 +589,9 @@ function checkDiseaseRisk(lat, lon, soilDrainage) {
     };
   }
 
-  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=th`;
   try {
-    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    const data = JSON.parse(response.getContentText());
-    let heavyRainCount = 0;
-    let leafWetnessHours = 0;
-
-    if (data.list && Array.isArray(data.list)) {
-      data.list.slice(0, 24).forEach(item => {
-        const rain = item.rain && item.rain['3h'] ? item.rain['3h'] : 0;
-        if (item.main && (item.main.humidity > 85 || rain > 0.5)) leafWetnessHours += 3;
-        if (rain > 5) heavyRainCount++;
-      });
-    }
+    let heavyRainCount = features.heavyRainEvents || 0;
+    let leafWetnessHours = features.leafWetnessHours || 0;
 
     let normalizedRisk = 'Low';
     let riskLevel = 'ความเสี่ยงต่ำ (Low)';
@@ -533,6 +676,25 @@ function getDashboardData() {
       const actualBrix = row[29] || '';
       const actualGrade = String(row[30] || '');
       const diseaseObserved = String(row[31] || '');
+      const weatherFeatures = {
+        retrievedAt: row[32] || '',
+        source: String(row[33] || ''),
+        rain24hMm: Number(row[34]) || 0,
+        rain72hMm: Number(row[35]) || 0,
+        rain120hMm: Number(row[36]) || 0,
+        humidityAvg: Number(row[37]) || 0,
+        humidityMax: Number(row[38]) || 0,
+        tempAvgC: Number(row[39]) || 0,
+        tempMinC: Number(row[40]) || 0,
+        tempMaxC: Number(row[41]) || 0,
+        leafWetnessHours: Number(row[42]) || 0,
+        heavyRainEvents: Number(row[43]) || 0,
+        dryForecastSlots: Number(row[44]) || 0,
+        weatherStressScore: Number(row[45]) || 0,
+        droughtScore: Number(row[46]) || 0,
+        diseaseWeatherScore: Number(row[47]) || 0,
+        weatherImpactFactor: Number(row[48]) || 1
+      };
 
       let farmRevenue = 0;
       if (gradeStr.includes('A')) farmRevenue = yieldTon * 15000;
@@ -621,6 +783,7 @@ function getDashboardData() {
           actualBrix,
           actualGrade,
           diseaseObserved,
+          weatherFeatures,
           daysToHarvest
         });
       }
