@@ -34,6 +34,7 @@ Browser -> Vercel /api/apps-script -> Google Apps Script -> Google Sheet / Googl
 - เพิ่ม UX: ใช้ตำแหน่งปัจจุบัน, สถานะฟอร์ม, งานด่วนวันนี้, ใกล้เก็บเกี่ยว 14 วัน, และแปลงที่ยังไม่มีรูป
 - เพิ่ม data model: Variety, Plant Density, Soil Type, Irrigation, Drainage Score, Notes, Actual Harvest Date, Actual Yield, Actual Brix, Actual Grade, Disease Observed
 - เพิ่ม weather feature columns สำหรับฝึก ML: rain forecast, humidity, temperature, leaf wetness, drought score, disease weather score, weather stress score, weather impact factor
+- เพิ่ม disease classification columns สำหรับฝึก ML: predicted disease class, risk score, probability, severity, reasons, recommended action, training label
 
 ## 1. ตั้งค่า Google Apps Script
 
@@ -199,3 +200,30 @@ Deployments > เลือก deployment ล่าสุด > ... > Redeploy
 Dashboard ไม่เห็นข้อมูลที่เพิ่งลบ
 
 ระบบใช้ soft delete ข้อมูลยังอยู่ใน Sheet แต่ `Status` เป็น `Deleted` และ dashboard จะซ่อนรายการนั้น
+
+## 8. ML v3 workflow
+
+1. ลงทะเบียนแปลงใหม่เพื่อสร้าง prediction snapshot ระบบจะเก็บเวลา prediction, weather features, model version และ probability ไว้ในแถวเดียวกัน
+2. เมื่อมีผลสำรวจหรือผลเก็บเกี่ยวจริง ไปที่ `Grading Analysis > Model Intelligence > Record Observed Outcome`
+3. เลือกแปลงเดิม แล้วบันทึก Actual Yield, Harvested Area, Brix, Grade, Ripeness, Disease หรือ Drought ตามข้อมูลที่มี
+4. ระบบจะเติม outcome ลงในแถวเดิมโดยไม่เขียนทับ prediction snapshot
+5. เมื่อมีข้อมูลเพียงพอ กด `Train New Challenger`
+
+เกณฑ์ข้อมูลสำหรับฝึก:
+
+- Yield ใช้ Elastic Net regression, Group K-fold CV และ conformal interval
+- Yield ต้องมีอย่างน้อย 20 outcome rows จาก 3 แปลงเพื่อประเมิน challenger
+- Yield จะ promote เป็น champion เมื่อมีอย่างน้อย 50 rows จาก 5 แปลงและ CV RMSE ดีกว่าเดิม
+- Yield outcome ต้องถูกบันทึกหลัง prediction อย่างน้อย 7 วัน
+- Disease ใช้ one-vs-rest regularized logistic classification พร้อม probability blend
+- Disease ต้องมีอย่างน้อย 10 positive และ 10 negative ต่อโรค
+- Disease จะ promote เมื่อมีอย่างน้อย 50 rows จาก 5 แปลงและ CV Macro F1 ดีกว่าเดิม
+- Disease outcome ต้องถูกบันทึกหลัง prediction อย่างน้อย 1 วัน
+- แถวที่ weather data quality ต่ำหรือเวลา prediction/outcome ไม่ถูกต้องจะไม่ถูกใช้ฝึก
+- Ripeness runtime มี image-quality gate, confidence margin และ abstain; การ train CNN รุ่นใหม่ต้องใช้ชุดภาพที่ติดป้ายกำกับแยกต่างหาก
+
+ทดสอบ logic ของ ML ในเครื่อง:
+
+```text
+node tests/ml-smoke.test.cjs
+```

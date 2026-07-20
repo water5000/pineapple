@@ -313,7 +313,7 @@
             <p class="text-xl text-gray-700 mt-5 max-w-3xl">การวิเคราะห์คุณภาพแบบเรียลไทม์ผ่าน Grading AI เพื่อระบุสัดส่วนผลผลิตล่วงหน้าก่อนการเก็บเกี่ยว</p>
           </div>
           <div class="metric-card flex justify-between items-center">
-            <div><p class="text-sm font-bold text-gray-500">ความแม่นยำ</p><p id="aiAccuracy" class="text-4xl font-extrabold text-[var(--pine)]">0%</p></div>
+            <div><p class="text-sm font-bold text-gray-500">ความมั่นใจเฉลี่ย</p><p id="aiAccuracy" class="text-4xl font-extrabold text-[var(--pine)]">0%</p></div>
             <div class="h-16 w-px bg-gray-200"></div>
             <div><p class="text-sm font-bold text-gray-500">พื้นที่พยากรณ์</p><p id="forecastArea" class="text-4xl font-extrabold text-[var(--pine)]">0</p><p class="text-xl font-bold">ไร่</p></div>
           </div>
@@ -335,6 +335,81 @@
               <div class="bg-white/8 rounded-lg p-4"><p class="text-sm text-[#b8d7ca]">เสี่ยง</p><p id="qualityRisk" class="text-2xl font-bold">0%</p></div>
             </div>
           </div>
+        </div>
+
+        <div class="soft-card p-7 md:p-8 mt-7" id="modelIntelligencePanel">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div>
+              <p class="uppercase tracking-[.16em] text-xs text-[var(--olive)] font-extrabold">Model Management</p>
+              <h3 class="text-3xl font-extrabold text-[var(--pine)] mt-1">Model Intelligence</h3>
+              <p class="text-gray-600 mt-2">สถานะโมเดลพยากรณ์ที่ใช้งานจริงและผลประเมินจากข้อมูลนอกชุดฝึก</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button type="button" onclick="recordObservedOutcome()" class="border border-[var(--pine)] text-[var(--pine)] bg-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap">
+                Record Observed Outcome
+              </button>
+              <button type="button" onclick="trainMLModels()" class="bg-[var(--pine)] text-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap">
+                Train New Challenger
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 mt-7 border-y border-gray-200">
+            <div class="py-6 lg:pr-8 lg:border-r border-gray-200">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-bold">YIELD FORECAST</p>
+                  <p id="yieldModelVersion" class="text-xl font-extrabold mt-1">ยังไม่มี Champion</p>
+                </div>
+                <span id="yieldModelBadge" class="rounded-full px-3 py-1 text-xs font-extrabold bg-gray-100 text-gray-600">NOT TRAINED</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-5 mt-5">
+                <div><p class="text-xs text-gray-500">Out-of-sample</p><p id="yieldModelMetric" class="font-extrabold mt-1">RMSE -</p></div>
+                <div><p class="text-xs text-gray-500">Training rows</p><p id="yieldModelSamples" class="font-extrabold mt-1">0</p></div>
+                <div><p class="text-xs text-gray-500">Last trained</p><p id="yieldModelUpdated" class="font-extrabold mt-1">-</p></div>
+              </div>
+            </div>
+
+            <div class="py-6 lg:px-8 lg:border-r border-gray-200">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-bold">DISEASE CLASSIFIER</p>
+                  <p id="diseaseModelVersion" class="text-xl font-extrabold mt-1">ยังไม่มี Champion</p>
+                </div>
+                <span id="diseaseModelBadge" class="rounded-full px-3 py-1 text-xs font-extrabold bg-gray-100 text-gray-600">NOT TRAINED</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-5 mt-5">
+                <div><p class="text-xs text-gray-500">Out-of-sample</p><p id="diseaseModelMetric" class="font-extrabold mt-1">Macro F1 -</p></div>
+                <div><p class="text-xs text-gray-500">Training rows</p><p id="diseaseModelSamples" class="font-extrabold mt-1">0</p></div>
+                <div><p class="text-xs text-gray-500">Last trained</p><p id="diseaseModelUpdated" class="font-extrabold mt-1">-</p></div>
+              </div>
+            </div>
+
+            <div class="py-6 lg:pl-8">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-bold">RIPENESS VISION</p>
+                  <p id="ripenessModelVersion" class="text-xl font-extrabold mt-1">กำลังโหลดโมเดล</p>
+                </div>
+                <span id="ripenessModelBadge" class="rounded-full px-3 py-1 text-xs font-extrabold bg-gray-100 text-gray-600">LOADING</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-5 mt-5">
+                <div><p class="text-xs text-gray-500">Runtime guard</p><p class="font-extrabold mt-1">Quality + abstain</p></div>
+                <div><p class="text-xs text-gray-500">Outcome labels</p><p id="ripenessOutcomeSamples" class="font-extrabold mt-1">0</p></div>
+                <div><p class="text-xs text-gray-500">Output</p><p class="font-extrabold mt-1">Ordinal level</p></div>
+              </div>
+            </div>
+          </div>
+
+          <details class="mt-5">
+            <summary class="cursor-pointer font-extrabold text-[var(--pine)]">Model details and latest challenger</summary>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5 text-sm">
+              <div><p class="text-gray-500">Feature version</p><p id="modelFeatureVersion" class="font-bold mt-1">-</p></div>
+              <div><p class="text-gray-500">Latest yield challenger</p><p id="yieldChallengerStatus" class="font-bold mt-1">-</p></div>
+              <div><p class="text-gray-500">Latest disease challenger</p><p id="diseaseChallengerStatus" class="font-bold mt-1">-</p></div>
+              <div class="md:col-span-3"><p class="text-gray-500">Training data quality</p><p id="modelDataQuality" class="font-bold mt-1">-</p></div>
+            </div>
+          </details>
         </div>
 
         <div class="soft-card p-8 mt-7">
@@ -411,6 +486,8 @@
               <img id="imagePreview" src="#" class="hidden max-h-52 rounded-lg shadow mx-auto mt-4">
               <div id="gradeResult" class="hidden mt-4 p-3 bg-white rounded-lg border border-purple-200 text-left">
                 <p><b>ผลการคัดเกรด:</b> <span id="gradeLevel" class="font-semibold text-purple-700"></span></p>
+                <p class="mt-2 text-sm"><b>คุณภาพภาพ:</b> <span id="imageQualityText">-</span></p>
+                <p class="mt-1 text-sm"><b>รายละเอียด:</b> <span id="ripenessDetail">-</span></p>
               </div>
             </div>
 
@@ -432,6 +509,7 @@
   <script>
     const APPS_SCRIPT_URL = "/api/apps-script";
     const TM_URL = "https://teachablemachine.withgoogle.com/models/g9bHNIOuJ/";
+    const RIPENESS_MODEL_VERSION = "tm-g9bHNIOuJ-runtime-v2";
     let aiModel;
     let formMap;
     let formMarker;
@@ -442,13 +520,21 @@
     let currentImageBase64 = "";
     let currentAiLabel = "";
     let currentAiConfidence = "";
+    let currentAiProbabilities = "";
+    let currentRipenessExpectedLevel = "";
+    let currentRipenessMargin = "";
+    let currentImageQualityScore = "";
+    let currentRipenessStatus = "";
     let allFarmsData = [];
     let dashboardData = null;
     let charts = {};
 
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('[data-page]').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
-      tmImage.load(TM_URL + "model.json", TM_URL + "metadata.json").then(model => aiModel = model).catch(() => {});
+      tmImage.load(TM_URL + "model.json", TM_URL + "metadata.json").then(model => {
+        aiModel = model;
+        updateRipenessModelBadge(true);
+      }).catch(() => updateRipenessModelBadge(false));
       initDashboardMap();
       initFormMap();
       loadDashboard();
@@ -489,6 +575,208 @@
         renderRiskPage(res.data);
         renderGradingPage(res.data);
       }).catch(err => showApiError({ message: err.toString() }, 'โหลดข้อมูลไม่สำเร็จ'));
+    }
+
+    function loadModelIntelligence() {
+      return callAppsScript('getMLModelStatus', {}).then(res => {
+        if (!res.success) throw new Error(res.message || 'Unable to load model status');
+        renderModelIntelligence(res.data || {});
+      }).catch(error => {
+        setText('modelDataQuality', 'ไม่สามารถโหลดสถานะโมเดลได้: ' + error.message);
+      });
+    }
+
+    function renderModelIntelligence(status) {
+      const currentFeatureVersion = status.featureVersion || '';
+      const storedYieldModel = status.yield || {};
+      const storedDiseaseModel = status.disease || {};
+      const yieldModel = storedYieldModel.featureVersion === currentFeatureVersion ? storedYieldModel : {};
+      const diseaseModel = storedDiseaseModel.featureVersion === currentFeatureVersion ? storedDiseaseModel : {};
+      const yieldChallenger = status.yieldChallenger || {};
+      const diseaseChallenger = status.diseaseChallenger || {};
+
+      renderChampionStatus('yield', yieldModel, 'RMSE', yieldModel.cvRmse, ' ton/rai');
+      renderChampionStatus('disease', diseaseModel, 'Macro F1', diseaseModel.cvMacroF1, '%');
+      setText('modelFeatureVersion', status.featureVersion || '-');
+      setText('yieldChallengerStatus', challengerStatus(yieldChallenger, yieldModel, 'cvRmse', 'CV RMSE', ' ton/rai'));
+      setText('diseaseChallengerStatus', challengerStatus(diseaseChallenger, diseaseModel, 'cvMacroF1', 'CV Macro F1', '%'));
+      updateRipenessModelBadge(Boolean(aiModel));
+
+      const yieldQuality = yieldModel.trained ? yieldModel : yieldChallenger;
+      const diseaseQuality = diseaseModel.trained ? diseaseModel : diseaseChallenger;
+      const excludedYield = Number(yieldQuality.excludedLowQuality || 0);
+      const excludedDisease = Number(diseaseQuality.excludedLowQuality || 0);
+      const temporalYield = Number(yieldQuality.excludedTemporalLeakage || 0);
+      const temporalDisease = Number(diseaseQuality.excludedTemporalLeakage || 0);
+      setText(
+        'modelDataQuality',
+        `ตัดข้อมูลคุณภาพต่ำ: weather Yield ${excludedYield}, Disease ${excludedDisease} · prediction/outcome timing Yield ${temporalYield}, Disease ${temporalDisease}`
+      );
+    }
+
+    function renderChampionStatus(prefix, model, metricLabel, metricValue, suffix) {
+      const trained = Boolean(model && model.trained);
+      setText(prefix + 'ModelVersion', trained ? model.version : 'ยังไม่มี Champion');
+      setText(prefix + 'ModelMetric', trained && metricValue !== undefined ? `${metricLabel} ${metricValue}${suffix}` : `${metricLabel} -`);
+      setText(prefix + 'ModelSamples', trained ? numberFormat(model.sampleCount || 0, 0) : '0');
+      setText(prefix + 'ModelUpdated', trained ? formatModelDate(model.trainedAt) : '-');
+
+      const badge = document.getElementById(prefix + 'ModelBadge');
+      if (!badge) return;
+      badge.textContent = trained ? 'CHAMPION' : 'NOT TRAINED';
+      badge.className = trained
+        ? 'rounded-full px-3 py-1 text-xs font-extrabold bg-[#c8f6db] text-[var(--pine)]'
+        : 'rounded-full px-3 py-1 text-xs font-extrabold bg-gray-100 text-gray-600';
+    }
+
+    function challengerStatus(challenger, champion, metricKey, metricLabel, suffix) {
+      if (!challenger || !challenger.trained) return 'ยังไม่มี Challenger';
+      const metric = challenger[metricKey];
+      const metricText = metric === undefined ? '' : ` · ${metricLabel} ${metric}${suffix}`;
+      const sameRun = champion && champion.trained && champion.trainedAt === challenger.trainedAt;
+      const decision = challenger.promoted === true || sameRun
+        ? 'Promoted'
+        : 'Evaluated, champion retained';
+      return `${challenger.version}${metricText} · ${decision}`;
+    }
+
+    function formatModelDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '-';
+      return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function updateRipenessModelBadge(ready) {
+      setText('ripenessModelVersion', RIPENESS_MODEL_VERSION);
+      const badge = document.getElementById('ripenessModelBadge');
+      if (!badge) return;
+      badge.textContent = ready ? 'RUNTIME READY' : 'MODEL UNAVAILABLE';
+      badge.className = ready
+        ? 'rounded-full px-3 py-1 text-xs font-extrabold bg-[#c8f6db] text-[var(--pine)]'
+        : 'rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-800';
+    }
+
+    async function recordObservedOutcome() {
+      if (!allFarmsData.length) {
+        return Swal.fire({ icon: 'info', title: 'ยังไม่มีแปลงสำหรับบันทึกผลจริง' });
+      }
+
+      const farmOptions = allFarmsData
+        .map(farm => `<option value="${Number(farm.rowNumber)}">${escapeHtml(farm.name || `Plot ${farm.rowNumber}`)}</option>`)
+        .join('');
+      const result = await Swal.fire({
+        title: 'Record Observed Outcome',
+        width: 760,
+        confirmButtonText: 'บันทึกผลจริง',
+        showCancelButton: true,
+        html: `
+          <div class="text-left grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="font-bold text-sm sm:col-span-2">แปลง
+              <select class="swal2-select !m-0 !w-full" name="outcomeFarm">${farmOptions}</select>
+            </label>
+            <label class="font-bold text-sm">วันที่สำรวจผลจริง
+              <input class="swal2-input !m-0 !w-full" type="date" name="outcomeObservedAt">
+            </label>
+            <label class="font-bold text-sm">วันที่เก็บเกี่ยวจริง
+              <input class="swal2-input !m-0 !w-full" type="date" name="actualHarvestDate">
+            </label>
+            <label class="font-bold text-sm">ผลผลิตจริง (ตัน)
+              <input class="swal2-input !m-0 !w-full" type="number" min="0" step="0.01" name="actualYieldTon">
+            </label>
+            <label class="font-bold text-sm">พื้นที่เก็บเกี่ยวจริง (ไร่)
+              <input class="swal2-input !m-0 !w-full" type="number" min="0.1" step="0.1" name="actualHarvestedAreaRai">
+            </label>
+            <label class="font-bold text-sm">อัตรารอดของต้น (%)
+              <input class="swal2-input !m-0 !w-full" type="number" min="0" max="100" step="0.1" name="plantSurvivalPct">
+            </label>
+            <label class="font-bold text-sm">Brix จริง
+              <input class="swal2-input !m-0 !w-full" type="number" min="0" step="0.1" name="actualBrix">
+            </label>
+            <label class="font-bold text-sm">เกรดจริง
+              <select class="swal2-select !m-0 !w-full" name="actualGrade"><option value="">-</option><option>Grade A</option><option>Grade B</option><option>Grade C</option></select>
+            </label>
+            <label class="font-bold text-sm">ระดับความสุกจริง
+              <select class="swal2-select !m-0 !w-full" name="actualRipenessLevel"><option value="">-</option><option>Level 0</option><option>Level 1</option><option>Level 2</option><option>Level 3</option></select>
+            </label>
+            <fieldset class="sm:col-span-2 border border-gray-200 rounded-lg p-3">
+              <legend class="font-bold text-sm px-1">โรคที่พบจริง (เลือกได้หลายข้อ)</legend>
+              <div class="flex flex-wrap gap-4 text-sm">
+                <label><input type="checkbox" name="outcomeDisease" value="Low Disease Risk"> ปกติ</label>
+                <label><input type="checkbox" name="outcomeDisease" value="Root/Crown Rot Risk"> ราก/ยอดเน่า</label>
+                <label><input type="checkbox" name="outcomeDisease" value="Fungal Spot/Leaf Disease Risk"> เชื้อรา/ใบจุด</label>
+              </div>
+            </fieldset>
+            <label class="font-bold text-sm sm:col-span-2">พบภาวะแล้ง
+              <select class="swal2-select !m-0 !w-full" name="droughtStressObserved"><option value="">ยังไม่สำรวจ</option><option value="No">ไม่พบ</option><option value="Yes">พบ</option></select>
+            </label>
+          </div>`,
+        preConfirm: () => {
+          const popup = Swal.getPopup();
+          const value = name => popup.querySelector(`[name="${name}"]`)?.value || '';
+          const diseaseValues = Array.from(popup.querySelectorAll('[name="outcomeDisease"]:checked'))
+            .map(input => input.value);
+          const diseases = diseaseValues.length > 1
+            ? diseaseValues.filter(label => label !== 'Low Disease Risk')
+            : diseaseValues;
+          const payload = {
+            rowNumber: value('outcomeFarm'),
+            outcomeObservedAt: value('outcomeObservedAt'),
+            actualHarvestDate: value('actualHarvestDate'),
+            actualYieldTon: value('actualYieldTon'),
+            actualHarvestedAreaRai: value('actualHarvestedAreaRai'),
+            plantSurvivalPct: value('plantSurvivalPct'),
+            actualBrix: value('actualBrix'),
+            actualGrade: value('actualGrade'),
+            actualRipenessLevel: value('actualRipenessLevel'),
+            diseaseObserved: diseases.join('|'),
+            droughtStressObserved: value('droughtStressObserved')
+          };
+          const hasMeasurement = Object.entries(payload)
+            .some(([key, fieldValue]) => !['rowNumber', 'outcomeObservedAt'].includes(key) && fieldValue !== '');
+          if (!payload.rowNumber || !payload.outcomeObservedAt || !hasMeasurement) {
+            Swal.showValidationMessage('เลือกแปลง ระบุวันที่สำรวจ และกรอกผลจริงอย่างน้อย 1 รายการ');
+            return false;
+          }
+          return payload;
+        }
+      });
+      if (!result.isConfirmed) return;
+
+      Swal.fire({ title: 'กำลังบันทึกผลจริง...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+      try {
+        const response = await callAppsScript('saveOutcome', result.value);
+        if (!response.success) return showApiError(response, 'บันทึกผลจริงไม่สำเร็จ');
+        await Swal.fire({ icon: 'success', title: 'บันทึกผลจริงแล้ว', html: response.message });
+        await loadDashboard();
+        await loadModelIntelligence();
+      } catch (error) {
+        showApiError({ message: error.toString() }, 'บันทึกผลจริงไม่สำเร็จ');
+      }
+    }
+
+    function trainMLModels() {
+      Swal.fire({ title: 'Training new challengers...', html: 'ระบบกำลังฝึกและประเมินโมเดลจากข้อมูลจริงใน Google Sheet', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+      callAppsScript('trainMLModels', {}).then(res => {
+        if (!res.success) return showApiError(res, 'Train New Challenger ไม่สำเร็จ');
+        const yieldModel = res.yieldModel || {};
+        const diseaseModel = res.diseaseModel || {};
+        const statusLine = model => model.trained
+          ? `trained (${model.sampleCount || 0} rows${model.cvRmse !== undefined ? `, CV RMSE ${model.cvRmse} ton/rai` : ''}${model.cvMacroF1 !== undefined ? `, CV Macro F1 ${model.cvMacroF1}%` : ''}, ${model.promoted ? 'promoted to champion' : 'kept as challenger'})`
+          : `not trained (${model.sampleCount || 0} rows) - ${model.message || 'data not enough'}`;
+        Swal.fire({
+          icon: 'success',
+          title: 'Challenger Training Completed',
+          html: `<div class="text-left leading-7">
+            <b>Yield Forecast:</b> ${statusLine(yieldModel)}<br>
+            <b>Disease Classifier:</b> ${statusLine(diseaseModel)}<br>
+            <small class="text-gray-500">Excluded weather rows: Yield ${yieldModel.excludedLowQuality || 0}, Disease ${diseaseModel.excludedLowQuality || 0} · timing/leakage rows: Yield ${yieldModel.excludedTemporalLeakage || 0}, Disease ${diseaseModel.excludedTemporalLeakage || 0}</small><br>
+            <small class="text-gray-500">หลังจากนี้การบันทึกแปลงใหม่จะใช้โมเดลที่ train แล้วโดยอัตโนมัติ หากโมเดลพร้อมใช้งาน</small>
+          </div>`
+        });
+        loadDashboard();
+        loadModelIntelligence();
+      }).catch(err => showApiError({ message: err.toString() }, 'Train New Challenger ไม่สำเร็จ'));
     }
 
     function renderDashboard(data) {
@@ -927,6 +1215,7 @@
       const avgConfidence = average(farms.map(f => Number(f.aiConfidence || 0)).filter(Boolean));
       const avgWeight = average(farms.map(f => Number(f.weight || 0)).filter(Boolean));
       setText('aiAccuracy', avgConfidence ? Math.round(avgConfidence * 100) + '%' : '0%');
+      setText('ripenessOutcomeSamples', farms.filter(farm => farm.actualRipenessLevel).length);
       setText('forecastArea', numberFormat(data.totalArea, 0));
       setText('qualityPct', qualityPct + '%');
       setText('qualityBrix', data.countBrix ? numberFormat(data.totalBrix / data.countBrix, 1) : '0');
@@ -937,6 +1226,7 @@
       setText('marketPlanText', gradeTotals.A >= gradeTotals.C ? 'สัดส่วน Grade A/B อยู่ในระดับดี แนะนำล็อกแผนขายล่วงหน้าและคัดแยกล็อตส่งออก' : 'พบ Grade C สูง ควรวางแผนส่งโรงงานแปรรูปและตรวจสาเหตุคุณภาพ');
       setText('productionRiskLevel', (data.risks.High || 0) ? 'High' : 'Low');
       setText('productionRiskText', (data.risks.High || 0) ? 'พบแปลงเสี่ยงสูง ควรตรวจความชื้นและโรครากเน่า/ยอดเน่าใน 48 ชั่วโมง' : 'ระบบยังไม่พบสัญญาณความเสี่ยงรุนแรงจากข้อมูลล่าสุด');
+      loadModelIntelligence();
     }
 
     function renderGradeYieldChart(totals) {
@@ -1009,27 +1299,117 @@
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          currentImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          const imageQuality = analyzeImageQuality(canvas);
+          currentImageQualityScore = imageQuality.score;
+          currentImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
           const preview = document.getElementById('imagePreview');
           preview.src = currentImageBase64;
           preview.classList.remove('hidden');
           document.getElementById('gradeResult').classList.remove('hidden');
           document.getElementById('gradeLevel').innerText = 'กำลังใช้ AI วิเคราะห์...';
+          setText('imageQualityText', `${imageQuality.score}/100 · ${imageQuality.message}`);
           setStatus('statusImage', 'รูปภาพ: พร้อม', 'green');
           setStatus('statusAi', 'AI: กำลังวิเคราะห์', 'amber');
+          currentAiProbabilities = '';
+          currentRipenessExpectedLevel = '';
+          currentRipenessMargin = '';
+          currentRipenessStatus = '';
+
+          if (imageQuality.score < 45) {
+            currentRipenessStatus = 'poor_image_quality';
+            document.getElementById('gradeLevel').innerText = 'ภาพไม่พร้อมวิเคราะห์';
+            setText('ripenessDetail', 'กรุณาถ่ายใหม่ให้สว่าง คมชัด และเห็นผลสับปะรดเต็มภาพ');
+            setStatus('statusAi', 'AI: ต้องถ่ายภาพใหม่', 'amber');
+            return;
+          }
+
           if (aiModel) {
-            const predictions = await aiModel.predict(preview);
-            const best = predictions.reduce((p, c) => p.probability > c.probability ? p : c);
+            const predictions = await aiModel.predict(canvas);
+            const ranked = predictions.slice().sort((a, b) => b.probability - a.probability);
+            const best = ranked[0];
+            const second = ranked[1] || { probability: 0 };
+            const margin = best.probability - second.probability;
+            const ordinalRows = predictions
+              .map(item => ({ level: extractRipenessLevel(item.className), probability: item.probability }))
+              .filter(item => item.level !== null);
+            const expectedLevel = ordinalRows.length
+              ? ordinalRows.reduce((sum, item) => sum + (item.level * item.probability), 0) /
+                Math.max(ordinalRows.reduce((sum, item) => sum + item.probability, 0), 0.0001)
+              : null;
+
             currentAiLabel = best.className;
             currentAiConfidence = Number(best.probability.toFixed(4));
-            document.getElementById('gradeLevel').innerText = `ระดับ ${best.className} (${Math.round(best.probability * 100)}%)`;
-            setStatus('statusAi', `AI: ${Math.round(best.probability * 100)}%`, 'green');
+            currentAiProbabilities = JSON.stringify(predictions.reduce((result, item) => {
+              result[item.className] = Number(item.probability.toFixed(5));
+              return result;
+            }, {}));
+            currentRipenessExpectedLevel = expectedLevel === null ? '' : Number(expectedLevel.toFixed(3));
+            currentRipenessMargin = Number(margin.toFixed(4));
+            const uncertain = best.probability < 0.6 || margin < 0.15;
+            currentRipenessStatus = uncertain ? 'insufficient_confidence' : 'accepted';
+
+            if (uncertain) {
+              document.getElementById('gradeLevel').innerText = `ยังไม่มั่นใจ: ${best.className} (${Math.round(best.probability * 100)}%)`;
+              setText('ripenessDetail', `ส่วนต่างสองอันดับ ${Math.round(margin * 100)}% · ควรถ่ายอีกมุมหรือตรวจ Brix`);
+              setStatus('statusAi', 'AI: ต้องตรวจเพิ่ม', 'amber');
+            } else {
+              document.getElementById('gradeLevel').innerText = `ระดับ ${best.className} (${Math.round(best.probability * 100)}%)`;
+              setText('ripenessDetail', expectedLevel === null ? `margin ${Math.round(margin * 100)}%` : `expected level ${expectedLevel.toFixed(2)} · margin ${Math.round(margin * 100)}%`);
+              setStatus('statusAi', `AI: ${Math.round(best.probability * 100)}%`, 'green');
+            }
           } else {
+            currentRipenessStatus = 'model_unavailable';
             setStatus('statusAi', 'AI: โหลดโมเดลไม่สำเร็จ', 'amber');
+            setText('ripenessDetail', 'ไม่สามารถโหลดโมเดลภาพ กรุณาตรวจเครือข่ายแล้วลองใหม่');
           }
         };
       };
       reader.readAsDataURL(file);
+    }
+
+    function analyzeImageQuality(canvas) {
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const stride = Math.max(1, Math.floor(Math.sqrt((canvas.width * canvas.height) / 12000)));
+      const luminance = [];
+      let edgeTotal = 0;
+      let edgeCount = 0;
+      for (let y = 0; y < canvas.height; y += stride) {
+        let previous = null;
+        for (let x = 0; x < canvas.width; x += stride) {
+          const index = (y * canvas.width + x) * 4;
+          const value = (imageData[index] * 0.299) + (imageData[index + 1] * 0.587) + (imageData[index + 2] * 0.114);
+          luminance.push(value);
+          if (previous !== null) {
+            edgeTotal += Math.abs(value - previous);
+            edgeCount++;
+          }
+          previous = value;
+        }
+      }
+      const mean = luminance.reduce((sum, value) => sum + value, 0) / Math.max(luminance.length, 1);
+      const variance = luminance.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / Math.max(luminance.length, 1);
+      const exposureScore = clampClient(100 - (Math.abs(mean - 132) * 0.9), 0, 100);
+      const contrastScore = clampClient(Math.sqrt(variance) * 3, 0, 100);
+      const sharpnessScore = clampClient((edgeTotal / Math.max(edgeCount, 1)) * 7, 0, 100);
+      const score = Math.round((exposureScore * 0.4) + (contrastScore * 0.25) + (sharpnessScore * 0.35));
+      const message = score < 45 ? 'ภาพมืด สว่าง หรือเบลอเกินไป' : score < 65 ? 'พอใช้ ควรถ่ายเพิ่มอีกมุม' : 'พร้อมวิเคราะห์';
+      return { score, message };
+    }
+
+    function extractRipenessLevel(label) {
+      const text = String(label || '').toLowerCase();
+      const digit = text.match(/(?:level|class|stage|ระดับ)?\s*([0-3])/);
+      if (digit) return Number(digit[1]);
+      if (text.includes('over')) return 3;
+      if (text.includes('unripe') || text.includes('ดิบ')) return 0;
+      if (text.includes('turn') || text.includes('half')) return 1;
+      if (text.includes('ripe') || text.includes('สุก')) return 2;
+      return null;
+    }
+
+    function clampClient(value, minimum, maximum) {
+      return Math.max(minimum, Math.min(maximum, Number(value)));
     }
 
     function submitForm(event) {
@@ -1060,9 +1440,25 @@
         latitude: form.latitude.value,
         longitude: form.longitude.value,
         notes: form.notes.value,
+        outcomeObservedAt: '',
+        actualHarvestDate: '',
+        actualYieldTon: '',
+        actualHarvestedAreaRai: '',
+        plantSurvivalPct: '',
+        actualBrix: '',
+        actualGrade: '',
+        actualRipenessLevel: '',
+        diseaseObserved: '',
+        droughtStressObserved: '',
         aiAnalysis: document.getElementById('gradeLevel').innerText || 'ไม่ได้วิเคราะห์',
         aiLabel: currentAiLabel,
         aiConfidence: currentAiConfidence,
+        ripenessModelVersion: RIPENESS_MODEL_VERSION,
+        ripenessProbabilities: currentAiProbabilities,
+        ripenessExpectedLevel: currentRipenessExpectedLevel,
+        ripenessMargin: currentRipenessMargin,
+        imageQualityScore: currentImageQualityScore,
+        ripenessStatus: currentRipenessStatus,
         imageBase64: currentImageBase64
       };
 
@@ -1079,6 +1475,11 @@
         currentImageBase64 = '';
         currentAiLabel = '';
         currentAiConfidence = '';
+        currentAiProbabilities = '';
+        currentRipenessExpectedLevel = '';
+        currentRipenessMargin = '';
+        currentImageQualityScore = '';
+        currentRipenessStatus = '';
         if (formMarker) {
           formMap.removeLayer(formMarker);
           formMarker = null;
