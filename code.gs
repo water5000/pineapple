@@ -124,13 +124,14 @@ function getOpenWeatherApiKey() {
 }
 
 function getApiSecret() {
-  return PropertiesService.getScriptProperties().getProperty('API_SECRET');
+  return String(PropertiesService.getScriptProperties().getProperty('API_SECRET') || '').trim();
 }
 
 function isAuthorizedRequest(body) {
   const expectedSecret = getApiSecret();
   if (!expectedSecret) return false;
-  return body && body.apiSecret === expectedSecret;
+  const receivedSecret = String(body && body.apiSecret || '').trim();
+  return receivedSecret && receivedSecret === expectedSecret;
 }
 
 function doGet(e) {
