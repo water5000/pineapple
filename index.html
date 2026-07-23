@@ -2,16 +2,15 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Digital Agronomist | Pineapple Intelligence</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="tailwind.min.css" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="https://accounts.google.com/gsi/client?hl=th"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --pine: #003f2a;
@@ -19,24 +18,63 @@
       --leaf: #eaf2ec;
       --lime: #b9f2d0;
       --gold: #ffd319;
-      --olive: #867600;
+      --olive: #6b5e00;
       --ink: #0f1f1a;
+      --surface: #ffffff;
+      --surface-subtle: #f4f8f2;
+      --surface-muted: #eef4ec;
+      --field-border: #dfe9dd;
+      --field-border-soft: #e8efe6;
+      --text-muted: #52635d;
+      --danger: #b91c1c;
+      --font-ui: 'Kanit', sans-serif;
       --field-monitor-min-height: 560px;
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+      --z-map-overlay: 20;
+      --z-sticky: 40;
+      --z-navigation: 60;
+      --z-auth: 80;
     }
     * { box-sizing: border-box; }
-    html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-    body { font-family: 'Sarabun', sans-serif; background: #f4f8f2; color: var(--ink); }
-    .app-shell { min-height: 100vh; width: 100%; max-width: 100%; overflow-x: hidden; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
-    main { min-width: 0; }
+    html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+    body { font-family: var(--font-ui); font-kerning: normal; line-height: 1.6; background: var(--surface-subtle); color: var(--ink); }
+    .leaflet-container, .leaflet-popup-content, .leaflet-control { font-family: var(--font-ui); }
+    .app-shell { min-height: 100vh; width: 100%; max-width: 100%; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+    .auth-gate { position: fixed; inset: 0; z-index: var(--z-auth); display: grid; place-items: center; padding: 20px; background: var(--surface-subtle); }
+    .auth-gate[hidden] { display: none; }
+    .auth-panel { width: min(100%, 440px); max-width: calc(100vw - 40px); border: 1px solid var(--field-border); border-radius: 14px; padding: 28px; background: var(--surface); }
+    .auth-panel .brand-logo { margin-bottom: 24px; }
+    .auth-message { margin-top: 16px; color: var(--text-muted); font-size: .75rem; }
+    .auth-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+    main { min-width: 0; width: 100%; max-width: 1800px; margin-inline: auto; }
+    .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+    .skip-link { position: fixed; left: 16px; top: 12px; z-index: 1100; transform: translateY(-160%); border-radius: 10px; padding: 10px 16px; background: var(--pine); color: white; font-weight: 700; transition: transform .18s ease; }
+    .skip-link:focus { transform: translateY(0); }
+    :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+    h1[tabindex="-1"]:focus { outline: none; }
+    :where(button, a, summary):active { transform: translateY(1px); }
     .sidebar { background: #f8fbf6; border-right: 1px solid #e5eee4; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
     .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 18px; border-radius: 8px; color: #164d3d; font-weight: 700; transition: .18s ease; }
     .nav-item:hover, .nav-item.active { background: var(--pine); color: white; }
     .nav-icon { width: 22px; height: 22px; display: inline-grid; place-items: center; }
+    .nav-icon svg { width: 20px; height: 20px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .page { display: none; }
     .page.active { display: block; }
-    .soft-card { min-width: 0; background: rgba(255,255,255,.92); border: 1px solid rgba(222,232,221,.9); border-radius: 14px; box-shadow: 0 18px 45px rgba(0, 55, 34, .06); }
-    .metric-card { background: #fff; border-radius: 14px; border: 1px solid #e8efe6; padding: 22px; }
+    .page[aria-busy="true"] { cursor: progress; }
+    .soft-card { min-width: 0; background: var(--surface); border: 1px solid var(--field-border); border-radius: 14px; }
+    .metric-card { background: var(--surface); border-radius: 14px; border: 1px solid var(--field-border-soft); padding: 22px; }
+    .priority-strip { display: grid; grid-template-columns: 1fr; gap: 1px; overflow: hidden; border: 1px solid var(--field-border); border-radius: 14px; background: var(--field-border); }
+    .priority-strip .metric-card { border: 0; border-radius: 0; }
     .dark-panel { background: var(--pine); color: white; border-radius: 14px; }
+    .dark-data-group { margin-top: 20px; padding-block: 18px; border-block: 1px solid rgba(255,255,255,.18); }
+    .dark-data-group + .dark-data-group { margin-top: 0; border-top: 0; }
+    .dark-stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 24px; border-block: 1px solid rgba(255,255,255,.18); }
+    .dark-stat { min-width: 0; padding: 14px 16px; border-inline-end: 1px solid rgba(255,255,255,.18); }
+    .dark-stat:first-child { padding-inline-start: 0; }
+    .dark-stat:last-child { padding-inline-end: 0; border-inline-end: 0; }
+    .data-list { border-block: 1px solid var(--field-border); }
+    .data-list > * { border-bottom: 1px solid var(--field-border); }
+    .data-list > *:last-child { border-bottom: 0; }
     .brand-logo { width: 210px; max-width: 100%; height: auto; object-fit: contain; }
     .dashboard-map-card { min-height: 520px; border-radius: 14px; position: relative; overflow: hidden; border: 1px solid #dfe9dd; background: #e8f0e5; }
     #dashboardLeafletMap { height: 520px; min-height: 520px; border-radius: 14px; z-index: 1; }
@@ -50,15 +88,111 @@
     .chart-frame canvas { display: block; width: 100% !important; height: 100% !important; }
     .top-harvest-panel { min-height: 300px; display: flex; flex-direction: column; }
     .top-harvest-scroll { flex: 1; overflow: auto; padding-right: 4px; }
+    .mode-control { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--field-border); border-radius: 10px; padding: 8px 12px; background: var(--surface); color: var(--pine); font-weight: 700; }
+    .mode-control:hover { border-color: var(--pine); background: var(--leaf); }
+    .mode-control[aria-pressed="true"] { background: var(--pine); color: white; }
+    .top-utilities { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--field-border); }
+    .top-utilities[hidden] { display: none; }
+    .global-search-input { border: 1px solid transparent; border-radius: 10px; background: var(--surface-muted); }
+    .global-search-input:focus { border-color: var(--pine); box-shadow: 0 0 0 3px rgba(0,63,42,.12); }
+    .search-leading-icon { position: absolute; left: 16px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--text-muted); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+    .search-clear { position: absolute; right: 8px; top: 50%; min-width: 40px; min-height: 40px; transform: translateY(-50%); border-radius: 8px; color: var(--pine); font-size: .75rem; font-weight: 800; }
+    .search-clear:hover { background: var(--leaf); }
+    .connection-status { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: var(--pine); font-size: .75rem; font-weight: 700; }
+    .connection-status::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--pine); box-shadow: 0 0 0 3px var(--healthy); }
+    .connection-status[data-state="offline"] { color: var(--danger); }
+    .connection-status[data-state="offline"]::before { background: var(--danger); box-shadow: 0 0 0 3px #fde1e1; }
+    .connection-status[data-state="error"] { color: var(--danger); }
+    .connection-status[data-state="error"]::before { background: var(--danger); box-shadow: 0 0 0 3px #fde1e1; }
+    .connection-status[data-state="stale"], .connection-status[data-state="checking"] { color: var(--olive); }
+    .connection-status[data-state="stale"]::before, .connection-status[data-state="checking"]::before { background: var(--olive); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 38%, transparent); }
+    .forecast-context { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .75rem; font-weight: 600; }
+    .forecast-period-select { min-height: 36px; border: 1px solid var(--field-border); border-radius: 10px; padding: 6px 28px 6px 10px; background: var(--surface); color: var(--pine); font: inherit; font-weight: 700; }
+    .profile-identity { padding-top: 12px; border-top: 1px solid var(--field-border); }
+    .logout-button { margin-top: 12px; color: var(--text-muted); font-size: .75rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+    .guest-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--field-border); border-radius: 12px; padding: 16px 20px; background: var(--leaf); }
+    .guest-notice[hidden] { display: none; }
+    .mode-note { color: var(--text-muted); font-size: .75rem; line-height: 1.4; }
+    .operator-nav[hidden], .report-nav[hidden], .operator-only[hidden], .report-only[hidden], .mode-control[hidden] { display: none !important; }
+    .guest-session .public-restricted, .guest-session .operator-write { display: none !important; }
+    .workspace-heading { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .workspace-heading > * { min-width: 0; }
+    .workspace-heading h1 { color: var(--pine); font-size: 2rem; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+    .workspace-heading p { color: var(--text-muted); max-width: 70ch; overflow-wrap: anywhere; }
+    .sync-copy { color: var(--text-muted); font-size: .75rem; }
+    .sync-copy strong { color: var(--pine); }
+    .sync-refresh { min-height: 40px; padding: 8px 12px; }
+    .summary-ribbon { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--field-border); margin-bottom: 20px; }
+    #todaySummaryRibbon { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .summary-ribbon[hidden] { display: none; }
+    .summary-ribbon > div { min-width: 0; padding: 14px 20px; border-inline-end: 1px solid var(--field-border); }
+    .summary-ribbon > div:first-child { padding-inline-start: 0; }
+    .summary-ribbon > div:last-child { border-inline-end: 0; padding-inline-end: 0; }
+    .summary-ribbon dt { color: var(--text-muted); font-size: .75rem; font-weight: 600; }
+    .summary-ribbon dd { margin-top: 4px; color: var(--pine); font-size: 1.5rem; font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; }
+    .decision-strip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; margin-bottom: 16px; border-radius: 14px; padding: 22px 24px; background: var(--pine); color: white; box-shadow: 0 6px 8px rgba(0,40,24,.12); }
+    .decision-strip-copy { min-width: 0; }
+    .decision-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .decision-heading .decision-label { color: rgba(255,255,255,.74); }
+    .decision-risk { display: inline-flex; align-items: center; min-height: 28px; border-radius: 999px; padding: 4px 10px; background: var(--gold); color: var(--ink); font-size: .75rem; font-weight: 800; }
+    .decision-farm { color: white; font-size: 1.5rem; font-weight: 800; line-height: 1.25; text-wrap: balance; }
+    .decision-reason { max-width: 72ch; margin-top: 8px; color: rgba(255,255,255,.9); font-size: 1rem; }
+    .decision-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; color: rgba(255,255,255,.72); font-size: .78rem; }
+    .decision-strip .btn-primary { background: var(--gold); color: var(--ink); }
+    .decision-strip .btn-primary:hover { background: var(--gold); filter: brightness(.96); }
+    .state-panel.is-inline { min-height: auto; padding: 14px 18px; margin-bottom: 16px; text-align: start; }
+    .state-panel.is-inline > div { width: 100%; }
+    .decision-label { color: var(--text-muted); font-size: .75rem; font-weight: 600; }
+    .decision-value { margin-top: 3px; color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
+    .field-split { display: grid; grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); gap: 16px; align-items: stretch; }
+    .operations-panel { min-width: 0; height: 520px; display: flex; flex-direction: column; border: 1px solid var(--field-border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+    .operations-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid var(--field-border); }
+    .queue-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+    .queue-filter { min-height: 36px; border-radius: 999px; padding: 7px 12px; color: var(--navigation-ink, #164d3d); font-size: .75rem; font-weight: 700; }
+    .queue-filter:hover, .queue-filter.active { background: var(--pine); color: white; }
+    .operations-queue { min-height: 0; overflow-y: auto; }
+    .queue-item { width: 100%; display: grid; grid-template-columns: 38px minmax(0, 1.1fr) minmax(0, 1.5fr) auto; gap: 12px; align-items: center; min-height: 82px; border-bottom: 1px solid var(--field-border-soft); padding: 12px 16px; text-align: left; transition: background 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
+    .queue-item:hover { background: var(--surface-subtle); }
+    .queue-item[aria-current="true"] { background: var(--leaf); box-shadow: inset 0 0 0 2px var(--pine); }
+    .queue-rank { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: var(--surface-muted); color: var(--pine); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .queue-item[aria-current="true"] .queue-rank { background: var(--pine); color: white; }
+    .queue-title { color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
+    .queue-meta { color: var(--text-muted); font-size: .75rem; line-height: 1.4; }
+    .queue-reason { min-width: 0; color: var(--ink); font-size: 1rem; line-height: 1.45; overflow-wrap: anywhere; }
+    .queue-deadline { min-width: 86px; color: var(--text-muted); font-size: .75rem; text-align: right; }
+    .queue-deadline strong { display: block; color: var(--danger); font-size: 1rem; }
+    .severity-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; border-radius: 999px; padding: 3px 8px; font-size: .75rem; font-weight: 700; }
+    .severity-chip.high { background: #fde1e1; color: #821515; }
+    .severity-chip.medium { background: #fff8cc; color: var(--olive); }
+    .severity-chip.low { background: var(--leaf); color: var(--pine); }
+    .forecast-section { margin-top: 28px; border-top: 1px solid var(--field-border); padding-top: 28px; }
+    .forecast-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .38fr); gap: 20px; align-items: stretch; }
+    .forecast-chart-panel { min-width: 0; padding: 22px; border: 1px solid var(--field-border); border-radius: 14px; background: var(--surface); }
+    .forecast-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 16px; }
+    .panel-title { color: var(--ink); font-size: 1.5rem; font-weight: 800; line-height: 1.25; text-wrap: balance; }
+    .report-layout { display: grid; gap: 28px; }
+    .report-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .report-tab { min-height: 44px; border: 1px solid var(--field-border); border-radius: 10px; padding: 9px 14px; background: var(--surface); color: var(--pine); font-weight: 700; }
+    .report-tab.active { border-color: var(--pine); background: var(--pine); color: white; }
+    .report-panel[hidden] { display: none; }
+    .report-chart-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .6fr); gap: 20px; }
+    .report-chart { height: 320px; position: relative; }
+    .report-table th, .report-table td { padding: 12px 10px; border-bottom: 1px solid var(--field-border-soft); vertical-align: top; }
+    .report-table th { color: var(--text-muted); font-size: .75rem; font-weight: 700; }
+    .state-panel { display: grid; place-items: center; min-height: 180px; padding: 28px; text-align: center; color: var(--text-muted); }
+    .state-panel.hidden { display: none !important; }
+    .skeleton-line { height: 14px; border-radius: 999px; background: var(--field-border-soft); animation: skeleton-pulse 1.2s ease-in-out infinite alternate; }
+    @keyframes skeleton-pulse { to { opacity: .38; } }
     .pineapple-field { height: 100%; min-height: var(--field-monitor-min-height); background-image: linear-gradient(rgba(0,55,36,.12), rgba(0,55,36,.08)), url('https://images.unsplash.com/photo-1589820296156-2454bb8a6ad1?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center; border-radius: 14px; position: relative; overflow: hidden; }
     .field-monitor-shell { position: relative; height: 100%; min-height: var(--field-monitor-min-height); }
     .field-view { display: none; }
     .field-view.active { display: block; height: 100%; }
     .field-toolbar { position: absolute; left: 18px; top: 18px; z-index: 600; display: grid; gap: 8px; background: rgba(255,255,255,.76); backdrop-filter: blur(10px); border-radius: 12px; padding: 8px; box-shadow: 0 12px 30px rgba(0, 40, 24, .14); }
-    .field-tool-btn { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; color: #315447; font-weight: 900; transition: .16s ease; }
+    .field-tool-btn { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; color: #315447; font-weight: 800; transition: .16s ease; }
     .field-tool-btn:hover, .field-tool-btn.active { background: var(--pine); color: white; }
+    .field-tool-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     #fieldLeafletMap { height: 100%; min-height: var(--field-monitor-min-height); border-radius: 14px; z-index: 1; border: 1px solid #dfe9dd; }
-    .field-hotspot { position: absolute; width: 30px; height: 30px; border-radius: 999px; border: 4px solid #fff; box-shadow: 0 12px 26px rgba(0,0,0,.22); display: grid; place-items: center; color: white; font-size: 13px; font-weight: 900; transform: translate(-50%, -50%); cursor: pointer; }
+    .field-hotspot { position: absolute; width: 44px; height: 44px; border-radius: 999px; border: 4px solid #fff; box-shadow: 0 12px 26px rgba(0,0,0,.22); display: grid; place-items: center; color: white; font-size: .75rem; font-weight: 800; transform: translate(-50%, -50%); cursor: pointer; }
     .field-hotspot::after { content: ''; position: absolute; inset: -9px; border-radius: 999px; border: 2px solid currentColor; opacity: .32; }
     .field-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; background: #eef5ec; color: #164d3d; font-weight: 800; font-size: 12px; }
     .map-pin { position: absolute; width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #cf1f1f; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
@@ -70,148 +204,270 @@
     .risk-ring .ring-inner { width: 124px; height: 124px; }
     .quality-ring { width: 220px; height: 220px; border-radius: 50%; background: conic-gradient(var(--gold) 0 72%, rgba(255,255,255,.18) 72% 100%); display: grid; place-items: center; margin: auto; }
     .quality-ring-inner { width: 128px; height: 128px; border-radius: 50%; background: var(--pine); display: grid; place-items: center; color: white; text-align: center; }
-    .form-input, .form-select, .form-textarea { width: 100%; border: 1px solid #d7e3d5; border-radius: 10px; padding: 10px 12px; outline: none; background: white; }
+    .form-input, .form-select, .form-textarea { width: 100%; min-height: 44px; border: 1px solid #d7e3d5; border-radius: 10px; padding: 10px 12px; outline: none; background: white; }
     .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--pine); box-shadow: 0 0 0 3px rgba(0,63,42,.12); }
+    .form-input[aria-invalid="true"], .form-select[aria-invalid="true"] { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
+    .field-error { color: var(--danger); font-size: 12px; margin-top: 6px; font-weight: 600; }
+    .eyebrow { color: var(--olive); font-size: .75rem; font-weight: 800; letter-spacing: normal; text-transform: none; }
+    .section-title { color: var(--pine); font-size: 2rem; font-weight: 800; line-height: 1.2; }
+    .today-card { min-height: 126px; display: flex; flex-direction: column; justify-content: space-between; }
+    .today-card .metric-value { color: var(--pine); font-size: 2rem; font-weight: 800; line-height: 1; }
+    .metric-value, [id$="Count"], [id$="Pct"], [id$="Brix"], [id$="Yield"], [id$="Accuracy"] { font-variant-numeric: tabular-nums; }
+    .empty-state { border: 1px dashed #cbd9c9; background: #f7faf6; border-radius: 12px; padding: 28px; text-align: center; color: #52635d; }
+    .stepper { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-bottom: 28px; }
+    .stepper-item { position: relative; text-align: center; color: #6b7c75; font-size: 12px; font-weight: 700; }
+    .stepper-item::before { content: attr(data-step); display: grid; place-items: center; width: 32px; height: 32px; margin: 0 auto 7px; border-radius: 999px; background: #e8eee6; color: #52635d; }
+    .stepper-item.active { color: var(--pine); }
+    .stepper-item.active::before { background: var(--pine); color: white; }
+    .stepper-item.complete::before { content: '✓'; background: #c8f6db; color: var(--pine); }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    .step-actions { position: sticky; bottom: 12px; z-index: 700; display: flex; gap: 12px; justify-content: space-between; margin-top: 28px; padding: 12px; border: 1px solid #dfe9dd; border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 0 12px 35px rgba(0,55,34,.12); backdrop-filter: blur(12px); }
+    .btn-primary, .btn-secondary { min-height: 46px; border-radius: 10px; padding: 11px 20px; font-weight: 800; transition: .18s ease; }
+    .btn-primary { background: var(--pine); color: white; }
+    .btn-primary:hover { background: var(--pine-2); transform: translateY(-1px); }
+    .btn-secondary { background: #eef4ec; color: var(--pine); }
+    .btn-primary:disabled, .btn-secondary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .field-page-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+    .advanced-panel > summary { list-style: none; cursor: pointer; padding: 22px 26px; color: var(--pine); font-size: 1.5rem; font-weight: 800; }
+    .advanced-panel > summary::-webkit-details-marker { display: none; }
+    .advanced-panel > summary::after { content: '+'; float: right; }
+    .advanced-panel[open] > summary::after { content: '−'; }
     #formMap, #riskLeafletMap { height: 360px; border-radius: 14px; z-index: 1; }
     .sample-img { height: 155px; object-fit: cover; width: 100%; border-radius: 10px; background: #edf2eb; }
+    .sample-analysis { min-width: 0; padding-top: 16px; border-top: 1px solid var(--field-border); }
+    #cultivarInsight { max-width: 70ch; line-height: 1.6; }
+    #exportAlertsButton, .table-action { min-width: 44px; min-height: 44px; }
+    .wrap-safe, button, th, td { overflow-wrap: anywhere; }
+    @media (min-width: 640px) { .priority-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 1280px) { .priority-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (pointer: coarse) {
+      :where(button, a, input, select, textarea, summary) { min-height: 44px; }
+      input, select, textarea { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+    @media (forced-colors: active) {
+      :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid CanvasText; }
+      .status-dot { border: 1px solid CanvasText; }
+    }
     @media (max-width: 980px) {
       :root { --field-monitor-min-height: 560px; }
-      .app-shell { grid-template-columns: 1fr; }
-      .sidebar { position: static; height: auto; }
-      .nav-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .app-shell { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+      main { width: 100%; max-width: 100vw; }
+      .sidebar { position: fixed; inset: auto 0 0 0; height: auto; z-index: var(--z-navigation); padding: 8px 10px max(10px, env(safe-area-inset-bottom)) !important; border-right: 0; border-top: 1px solid #dfe9dd; box-shadow: 0 -10px 30px rgba(0,55,34,.08); }
+      .sidebar-brand, .sidebar-profile { display: none; }
+      .nav-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+      .nav-item { flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 3px; border-radius: 10px; font-size: .75rem; line-height: 1.3; text-align: center; }
+      .nav-icon { width: 20px; height: 20px; font-size: 16px; }
+      main { padding-bottom: 92px !important; }
+      .step-actions { bottom: 78px; }
+      .stepper-item span { display: none; }
+      .advanced-panel .whitespace-nowrap { white-space: normal; }
+      .field-split, .forecast-layout, .report-chart-grid { grid-template-columns: 1fr; }
+      .operations-panel { height: auto; max-height: 520px; }
+      .report-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .dashboard-map-card, #dashboardLeafletMap { min-height: 390px; height: 390px; }
+      .dashboard-map-legend { left: 12px; top: 12px; padding: 12px 14px; font-size: 12px; }
+      .stepper { gap: 3px; }
+      .soft-card { border-radius: 12px; }
+      .step-actions { flex-wrap: wrap; }
+      .step-actions > * { flex: 1 1 130px; }
+      .top-utilities { justify-content: flex-start; }
+      .field-page-actions { width: 100%; justify-content: flex-start; }
+      .summary-ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary-ribbon > div { padding: 12px; }
+      .summary-ribbon > div:first-child { padding-inline-start: 0; }
+      .summary-ribbon > div:nth-child(2) { border-inline-end: 0; padding-inline-end: 0; }
+      .summary-ribbon > div:nth-child(-n+2) { border-bottom: 1px solid var(--field-border); }
+      #todaySummaryRibbon { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #todaySummaryRibbon > div { padding: 10px 8px; border-bottom: 0; border-inline-end: 1px solid var(--field-border); }
+      #todaySummaryRibbon > div:last-child { border-inline-end: 0; }
+      #todaySummaryRibbon dt { min-height: 2.8em; }
+      #todaySummaryRibbon dd { font-size: 1.5rem; }
+      .decision-strip { grid-template-columns: 1fr; }
+      .decision-strip .btn-primary { width: 100%; }
+      .queue-item { grid-template-columns: 32px minmax(0, 1fr) auto; }
+      .queue-reason { grid-column: 2 / -1; }
+      .workspace-heading { align-items: start; }
+      .workspace-heading h1 { font-size: 2rem; }
     }
   </style>
 </head>
 <body>
+  <svg class="visually-hidden" aria-hidden="true">
+    <symbol id="icon-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></symbol>
+    <symbol id="icon-field" viewBox="0 0 24 24"><path d="M4 19c5-1 9-5 10-10 3 1 5 4 5 7 0 3-2 5-5 5H6"></path><path d="M5 20c2-5 5-8 10-11"></path></symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 4 3.5 19h17L12 4Z"></path><path d="M12 9v4"></path><path d="M12 16.5h.01"></path></symbol>
+    <symbol id="icon-analysis" viewBox="0 0 24 24"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19H2"></path></symbol>
+    <symbol id="icon-report" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M15 3v5h5"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></symbol>
+    <symbol id="icon-risk" viewBox="0 0 24 24"><path d="M4 18c3-7 7-10 16-12"></path><path d="M5 13h5v5"></path><path d="M15 5h5v5"></path></symbol>
+    <symbol id="icon-forecast" viewBox="0 0 24 24"><path d="M4 18h16"></path><path d="m5 15 4-4 3 2 6-7"></path></symbol>
+    <symbol id="icon-export" viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></symbol>
+    <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"></path><path d="M9 3v15"></path><path d="M15 6v15"></path></symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m5 18 5-5 3 3 2-2 4 4"></path></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></symbol>
+  </svg>
+  <section id="authGate" class="auth-gate" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden>
+    <div class="auth-panel">
+      <img src="logo.png" alt="Digital Agronomist" class="brand-logo">
+      <h1 id="authTitle" class="section-title" tabindex="-1">เข้าสู่ระบบ Smart Pineapple</h1>
+      <p class="mt-3 text-gray-700">ใช้บัญชี Google ที่ได้รับสิทธิ์จากหน่วยงาน ระบบจะแสดงเฉพาะข้อมูลของสถานีที่คุณรับผิดชอบ</p>
+      <div id="googleSignInButton" class="mt-6 min-h-[44px]"></div>
+      <p id="authMessage" class="auth-message" role="status" aria-live="polite">กำลังตรวจสอบ session...</p>
+      <div class="auth-actions"><button type="button" class="btn-secondary" onclick="closeLogin()">ไว้ภายหลัง</button></div>
+    </div>
+  </section>
+  <a class="skip-link" href="#mainContent">ข้ามไปยังเนื้อหาหลัก</a>
   <div class="app-shell">
     <aside class="sidebar p-6">
-      <div class="mb-10">
+      <div class="mb-10 sidebar-brand">
         <img src="logo.png" alt="Digital Agronomist Pineapple Intelligence" class="brand-logo">
       </div>
-      <nav class="nav-list space-y-2">
-        <button class="nav-item active" data-page="dashboardPage"><span class="nav-icon">▦</span>Dashboard</button>
-        <button class="nav-item" data-page="fieldPage"><span class="nav-icon">▤</span>Field Map</button>
-        <button class="nav-item" data-page="riskPage"><span class="nav-icon">△</span>Risk Alerts</button>
-        <button class="nav-item" data-page="gradingPage"><span class="nav-icon">⌁</span>Grading Analysis</button>
-        <button class="nav-item" data-page="registerPage"><span class="nav-icon">＋</span>Register Plot</button>
+      <nav id="operatorNav" class="nav-list operator-nav space-y-2" aria-label="เมนูปฏิบัติงาน">
+        <button class="nav-item active" data-page="dashboardPage" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-overview"></use></svg></span><span>ภาพรวม</span></button>
+        <button class="nav-item" data-page="fieldPage"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-field"></use></svg></span><span>แปลง</span></button>
+        <button class="nav-item" data-page="riskPage"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-alert"></use></svg></span><span>งาน/แจ้งเตือน</span></button>
+        <button class="nav-item" data-page="gradingPage"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-analysis"></use></svg></span><span>วิเคราะห์</span></button>
+        <button class="nav-item" data-page="reportPage"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-report"></use></svg></span><span>รายงาน</span></button>
       </nav>
-      <div class="mt-10 soft-card p-4 text-sm">
-        <p class="font-bold text-[var(--pine)]">Agronomist Profile</p>
-        <p class="text-gray-500">Prachuap Station</p>
+      <nav id="reportNav" class="nav-list report-nav space-y-2" aria-label="เมนูดูรายงาน" hidden>
+        <button class="nav-item active" data-report-view="overview"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-overview"></use></svg></span><span>ภาพรวม</span></button>
+        <button class="nav-item" data-report-view="risk"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-risk"></use></svg></span><span>แนวโน้มเสี่ยง</span></button>
+        <button class="nav-item" data-report-view="forecast"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-forecast"></use></svg></span><span>พยากรณ์</span></button>
+        <button class="nav-item" data-report-view="exports"><span class="nav-icon" aria-hidden="true"><svg><use href="#icon-export"></use></svg></span><span>ส่งออก</span></button>
+      </nav>
+      <div class="mt-10 soft-card p-4 text-sm sidebar-profile">
+        <p id="profileName" class="font-bold text-[var(--pine)]">กำลังโหลดโปรไฟล์...</p>
+        <p id="profileRole" class="text-gray-700">นักวิชาการเกษตร</p>
+        <p id="profileStation" class="text-gray-500">กำลังตรวจสอบสถานี...</p>
+        <p id="profileModeNote" class="mode-note mt-2">สร้างงานและบันทึกผลภาคสนามได้</p>
+        <div class="profile-identity mt-3"><p id="profileEmail" class="mode-note wrap-safe"></p><button id="logoutButton" type="button" class="logout-button" onclick="logoutUser()">ออกจากระบบ</button></div>
       </div>
     </aside>
 
-    <main class="px-5 py-5 md:px-10 md:py-7">
-      <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
-        <div class="relative max-w-xl w-full">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">⌕</span>
-          <input id="globalSearch" class="w-full bg-[#e9eee8] rounded-2xl py-3 pl-11 pr-4 outline-none" placeholder="ค้นหาข้อมูลแปลงปลูก..." oninput="applyFilters()">
-        </div>
-        <div class="flex gap-3">
-          <span class="px-4 py-2 rounded-full bg-[#c8f6db] text-[var(--pine)] font-bold text-sm">LIVE FEED</span>
-          <span class="px-4 py-2 rounded-full bg-[#e2e7e1] text-gray-700 font-bold text-sm">Q4 PREDICTION</span>
-        </div>
+    <main id="mainContent" tabindex="-1" class="px-5 py-5 md:px-10 md:py-7">
+      <header id="overviewUtilities" class="top-utilities" aria-label="สถานะและเครื่องมือส่วนกลาง">
+        <span id="connectionBadge" role="status" aria-live="polite" class="connection-status" data-state="checking">กำลังตรวจสอบข้อมูล</span>
+        <p class="sync-copy">ซิงก์ล่าสุด <strong id="lastUpdatedAt" aria-live="polite">กำลังตรวจสอบ...</strong></p>
+        <button type="button" class="btn-secondary sync-refresh" onclick="refreshDashboard()" aria-label="ซิงก์ข้อมูลล่าสุด">รีเฟรช</button>
+        <button id="dashboardLoginButton" type="button" class="btn-primary" onclick="openLogin()" hidden>เข้าสู่ระบบ</button>
       </header>
 
-      <section id="dashboardPage" class="page active">
-        <div class="mb-8">
-          <p class="uppercase tracking-[.2em] text-sm text-[var(--olive)] font-extrabold">National Forecast</p>
-          <h2 class="text-4xl md:text-5xl font-extrabold text-[var(--pine)] mt-2">Summary of Total Production</h2>
-          <p class="text-xl text-gray-700 mt-3 max-w-3xl">National Pineapple Yield Forecast & Regional Health Monitoring Dashboard.</p>
+      <section id="dashboardPage" class="page active operator-only">
+        <div class="workspace-heading">
+          <div>
+            <h1>สถานการณ์แปลง</h1>
+            <p class="mt-2">ภาพรวมความเสี่ยง แปลงที่ควรติดตาม และกำหนดเก็บเกี่ยวจากข้อมูลล่าสุด</p>
+            <p class="mode-note mt-2">ประจวบคีรีขันธ์ · ศูนย์ติดตามแปลง</p>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6">
-          <div class="space-y-7">
-            <div class="dashboard-map-card">
+        <div id="dashboardLoadState" class="state-panel soft-card mb-5" role="status" aria-live="polite">
+          <div class="w-full max-w-xl">
+            <p class="font-bold text-[var(--pine)]">กำลังจัดลำดับแปลงที่ต้องดูแล...</p>
+            <div class="mt-4 space-y-3" aria-hidden="true"><div class="skeleton-line"></div><div class="skeleton-line w-4/5"></div><div class="skeleton-line w-3/5"></div></div>
+          </div>
+        </div>
+
+        <div id="dashboardWorkspace" class="hidden">
+          <section class="decision-strip" aria-labelledby="selectedActionFarm">
+            <div class="decision-strip-copy">
+              <div class="decision-heading"><p id="decisionHeadingLabel" class="decision-label">แปลงที่ควรดูแลเป็นอันดับแรก</p><span id="selectedActionRisk" class="decision-risk">กำลังจัดลำดับ</span></div>
+              <h2 id="selectedActionFarm" class="decision-farm">กำลังเลือกแปลงจากหลักฐานล่าสุด</h2>
+              <p id="selectedActionReason" class="decision-reason">ระบบกำลังเทียบความเสี่ยง สภาพแปลง และกำหนดเก็บเกี่ยว</p>
+              <div class="decision-meta"><span id="selectedActionNext">รอคำแนะนำงานถัดไป</span><span id="selectedActionEvidence">หลักฐานแปลงกำลังอัปเดต</span><span id="selectedActionSync">ซิงก์ระบบกำลังตรวจสอบ</span><span id="selectedActionDeadline">กำหนดตรวจ —</span></div>
+            </div>
+            <button id="openSelectedFieldButton" type="button" class="btn-primary" onclick="openSelectedDashboardField()" aria-describedby="selectedActionReason" disabled>เปิดแปลงที่แนะนำ</button>
+          </section>
+
+          <dl id="todaySummaryRibbon" class="summary-ribbon" aria-label="สรุปสถานการณ์วันนี้">
+            <div><dt>ตรวจวันนี้</dt><dd id="todayUrgentCount">—</dd></div>
+            <div><dt>เสี่ยงสูง</dt><dd id="todayRiskCount">—</dd></div>
+            <div><dt>เก็บเกี่ยว 14 วัน</dt><dd id="todayHarvestCount">—</dd></div>
+          </dl>
+
+          <div class="relative max-w-md w-full mb-4">
+            <svg class="search-leading-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+            <input id="globalSearch" type="search" aria-label="ค้นหาแปลงจากชื่อ พันธุ์ หรือระดับความเสี่ยง" aria-describedby="dashboardSearchStatus" class="global-search-input w-full py-3 pl-11 pr-16 outline-none" placeholder="ค้นหาชื่อแปลง พันธุ์ หรือความเสี่ยง...">
+            <button id="clearDashboardSearch" type="button" class="search-clear" onclick="clearDashboardSearch()" hidden>ล้าง</button>
+            <p id="dashboardSearchStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="field-split">
+                <section class="operations-panel" aria-label="รายการแปลงและลำดับความสำคัญ">
+              <div class="operations-toolbar">
+                <div><h2 id="operationsQueueTitle" class="panel-title" hidden>ภาคสนาม</h2><p id="operationsQueueCount" class="mode-note mt-1">กำลังจัดลำดับ...</p></div>
+                <div class="queue-filters" aria-label="กรองคิวงาน">
+                  <button type="button" class="queue-filter active" data-queue-filter="all">ทั้งหมด</button>
+                  <button type="button" class="queue-filter" data-queue-filter="High">เสี่ยงสูง</button>
+                  <button type="button" class="queue-filter" data-queue-filter="harvest">ใกล้เก็บเกี่ยว</button>
+                </div>
+              </div>
+              <div id="operationalQueue" class="operations-queue" role="list"></div>
+            </section>
+
+            <section class="dashboard-map-card" aria-labelledby="dashboardMapTitle">
+              <h2 id="dashboardMapTitle" class="visually-hidden">แผนที่สถานะแปลง</h2>
               <div id="dashboardLeafletMap"></div>
               <div class="dashboard-map-legend">
-                <p class="text-lg mb-3">Farm Locations</p>
-                <p class="mb-2"><span class="status-dot bg-[var(--pine)] mr-2"></span>Optimal Health</p>
-                <p class="mb-2"><span class="status-dot bg-[var(--olive)] mr-2"></span>Attention Required</p>
-                <p><span class="status-dot bg-red-600 mr-2"></span>High Risk Area</p>
+                <p class="font-bold mb-3">สถานะแปลง</p>
+                <p class="mb-2"><span class="status-dot bg-[var(--pine)] mr-2"></span>ปกติ</p>
+                <p class="mb-2"><span class="status-dot bg-[var(--olive)] mr-2"></span>ควรเฝ้าระวัง</p>
+                <p><span class="status-dot bg-red-600 mr-2"></span>เสี่ยงสูง</p>
               </div>
               <div class="dashboard-map-tools">
-                <button type="button" onclick="zoomDashboardMap(1)" class="dashboard-map-tool">+</button>
-                <button type="button" onclick="zoomDashboardMap(-1)" class="dashboard-map-tool">−</button>
+                <button type="button" onclick="zoomDashboardMap(1)" class="dashboard-map-tool" aria-label="ซูมแผนที่เข้า">+</button>
+                <button type="button" onclick="zoomDashboardMap(-1)" class="dashboard-map-tool" aria-label="ซูมแผนที่ออก">−</button>
               </div>
-              <div id="dashboardMapStatus" class="dashboard-map-status hidden"></div>
-            </div>
-
-            <div class="space-y-6">
-              <div class="soft-card p-7 yield-panel">
-                <div class="flex justify-between gap-4">
-                  <div>
-                    <h3 class="text-2xl font-extrabold">Yield Forecast (Metric Tons)</h3>
-                    <p class="text-gray-600">Predictive trend based on field and weather data.</p>
-                  </div>
-                  <div class="text-right">
-                    <p id="dashYieldBig" class="text-4xl font-extrabold text-[var(--pine)]">0</p>
-                    <p class="font-bold text-[var(--pine)]">forecast total</p>
-                  </div>
-                </div>
-                <div class="chart-frame mt-8"><canvas id="yieldChart"></canvas></div>
-              </div>
-
-              <div class="soft-card p-7 top-harvest-panel">
-                <div class="flex items-center justify-between mb-5">
-                  <h3 class="text-2xl font-extrabold">Top Harvest Areas</h3>
-                  <button class="text-2xl">...</button>
-                </div>
-                <div id="topHarvestList" class="top-harvest-scroll grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
-                <button onclick="switchPage('gradingPage')" class="mt-8 w-full bg-[var(--pine)] text-white rounded-xl py-4 font-extrabold text-lg">New Analysis Report</button>
-              </div>
-            </div>
+              <div id="dashboardMapStatus" role="status" aria-live="polite" class="dashboard-map-status hidden"></div>
+            </section>
           </div>
 
-          <div class="space-y-7">
-            <div class="soft-card p-6">
-              <h3 class="text-2xl font-extrabold">สถานะความเสี่ยง</h3>
-              <p class="text-gray-600">Regional Health Distribution</p>
-              <div class="ring risk-ring mx-auto my-7">
-                <div class="ring-inner">
-                  <div>
-                    <p id="healthScore" class="text-4xl font-extrabold">0%</p>
-                    <p class="text-xs tracking-[.2em] text-gray-500 font-bold">GENERAL HEALTH</p>
-                  </div>
+          <section class="forecast-section" aria-labelledby="forecastTitle">
+            <div class="forecast-layout">
+              <div class="forecast-chart-panel yield-panel">
+                <div class="forecast-summary">
+                  <div><h2 id="forecastTitle" class="panel-title">พยากรณ์เก็บเกี่ยว</h2><p id="forecastScopeNote" class="mode-note mt-1">ผลผลิตรายช่วงจากข้อมูลแปลงและสภาพอากาศล่าสุด</p><label class="forecast-context mt-2" for="forecastPeriodSelect"><span>ช่วงที่ใช้กับกราฟนี้</span><select id="forecastPeriodSelect" class="forecast-period-select" aria-label="เลือกช่วงพยากรณ์สำหรับกราฟผลผลิต"></select></label></div>
+                  <div class="text-right"><p id="dashYieldBig" class="text-2xl font-extrabold text-[var(--pine)]">0</p><p class="mode-note">ตันรวมที่คาดการณ์</p></div>
                 </div>
+                <div class="chart-frame mt-5"><canvas id="yieldChart"></canvas></div>
               </div>
-              <div class="space-y-4 font-bold">
-                <div class="flex justify-between"><span>Healthy Plots</span><span id="healthyPct" class="text-[var(--pine)]">0%</span></div>
-                <div class="flex justify-between"><span>Nutrient Deficient</span><span id="mediumPct" class="text-[var(--olive)]">0%</span></div>
-                <div class="flex justify-between"><span>Disease Risk</span><span id="riskPct" class="text-red-600">0%</span></div>
-              </div>
+              <aside class="forecast-chart-panel top-harvest-panel" aria-labelledby="nearHarvestTitle">
+                <div class="flex items-center justify-between gap-3 mb-4"><h2 id="nearHarvestTitle" class="panel-title">ใกล้เก็บเกี่ยว</h2><button type="button" class="btn-secondary" onclick="switchPage('gradingPage')">ดูคุณภาพ</button></div>
+                <div id="topHarvestList" class="top-harvest-scroll"></div>
+                <div class="mt-4 pt-4 border-t border-[var(--field-border)] grid grid-cols-3 gap-3 text-center">
+                  <div><p id="healthScore" class="font-extrabold text-[var(--pine)]">0%</p><p class="mode-note">สุขภาพรวม</p></div>
+                  <div><p id="mediumPct" class="font-extrabold text-[var(--olive)]">0%</p><p class="mode-note">เฝ้าระวัง</p></div>
+                  <div><p id="riskPct" class="font-extrabold text-red-700">0%</p><p class="mode-note">เสี่ยงสูง</p></div>
+                </div>
+                <span id="healthyPct" class="visually-hidden">0%</span><span id="plotCount" class="visually-hidden">0</span><span id="areaCount" class="visually-hidden">0</span><span id="brixCount" class="visually-hidden">0</span><span id="quickActionTitle" class="visually-hidden"></span>
+              </aside>
             </div>
-
-            <div class="dark-panel p-7 overflow-hidden relative">
-              <p class="uppercase tracking-[.2em] text-sm text-[#80b09e] font-bold">Quick Action</p>
-              <h3 id="quickActionTitle" class="text-2xl font-extrabold mt-3">Field Check Required</h3>
-              <button onclick="switchPage('riskPage')" class="mt-6 bg-[var(--gold)] text-black rounded-xl py-4 px-5 font-extrabold w-full">Generate Field Task</button>
-            </div>
-
-            <div class="grid grid-cols-3 gap-3">
-              <div class="metric-card"><p class="text-xs font-bold text-gray-500">Plots</p><p id="plotCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
-              <div class="metric-card"><p class="text-xs font-bold text-gray-500">Area</p><p id="areaCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
-              <div class="metric-card"><p class="text-xs font-bold text-gray-500">Brix</p><p id="brixCount" class="text-2xl font-extrabold text-[var(--pine)]">0</p></div>
-            </div>
-          </div>
+          </section>
         </div>
       </section>
 
-      <section id="fieldPage" class="page">
+      <section id="fieldPage" class="page operator-only">
         <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6 mb-6">
           <div>
-            <p class="text-sm text-gray-500">Thailand › Prachuap Khiri Khan › Sector A-14</p>
-            <h2 class="text-4xl font-extrabold text-[var(--pine)]">Field Monitoring</h2>
+            <h1 class="section-title">ติดตามสถานะแปลง</h1>
             <p id="selectedFarmName" class="text-gray-600 mt-2 font-bold">เลือกแปลงบนแผนที่เพื่อดูรายละเอียด</p>
           </div>
-          <button onclick="loadDashboard()" class="bg-[var(--gold)] rounded-lg px-6 py-3 font-extrabold">Update Field Data</button>
+          <div class="field-page-actions">
+            <button type="button" class="btn-secondary" onclick="refreshDashboard()">รีเฟรชข้อมูล</button>
+            <button type="button" class="btn-primary operator-write" onclick="beginFieldRecord()">บันทึกการตรวจแปลง</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_330px] gap-7">
           <div class="field-monitor-shell">
             <div class="field-toolbar" aria-label="Field view tools">
-              <button type="button" id="fieldMapModeBtn" onclick="setFieldViewMode('map')" class="field-tool-btn active" title="Map View">▣</button>
-              <button type="button" id="fieldImageModeBtn" onclick="setFieldViewMode('image')" class="field-tool-btn" title="Image View">⊙</button>
-              <button type="button" onclick="selectedFieldFarm = null; renderFieldPage({ farms: allFarmsData });" class="field-tool-btn" title="Show all plots">⌕</button>
+              <button type="button" id="fieldMapModeBtn" onclick="setFieldViewMode('map')" class="field-tool-btn active" title="มุมมองแผนที่" aria-label="มุมมองแผนที่"><svg class="w-5 h-5 fill-none stroke-current" aria-hidden="true"><use href="#icon-map"></use></svg></button>
+              <button type="button" id="fieldImageModeBtn" onclick="setFieldViewMode('image')" class="field-tool-btn" title="มุมมองภาพแปลง" aria-label="มุมมองภาพแปลง"><svg class="w-5 h-5 fill-none stroke-current" aria-hidden="true"><use href="#icon-image"></use></svg></button>
+              <button type="button" onclick="selectedFieldFarm = null; renderFieldPage({ farms: allFarmsData });" class="field-tool-btn" title="แสดงทุกแปลง" aria-label="แสดงทุกแปลง"><svg class="w-5 h-5 fill-none stroke-current" aria-hidden="true"><use href="#icon-search"></use></svg></button>
             </div>
             <div id="fieldMapView" class="field-view active">
               <div id="fieldLeafletMap"></div>
@@ -220,84 +476,89 @@
               <div id="fieldImagePanel" class="pineapple-field">
                 <div id="fieldMarkers"></div>
                 <div class="absolute bottom-5 left-5 flex gap-2 bg-white/80 p-3 rounded-lg text-sm font-bold">
-                  <span><i class="status-dot bg-[var(--pine)] mr-1"></i>Optimal</span>
-                  <span><i class="status-dot bg-[var(--olive)] mr-1"></i>Stressed</span>
-                  <span><i class="status-dot bg-red-600 mr-1"></i>Critical</span>
+                  <span><i class="status-dot bg-[var(--pine)] mr-1"></i>ปกติ</span>
+                  <span><i class="status-dot bg-[var(--olive)] mr-1"></i>เฝ้าระวัง</span>
+                  <span><i class="status-dot bg-red-600 mr-1"></i>วิกฤต</span>
                 </div>
               </div>
             </div>
           </div>
           <div class="space-y-5">
             <div class="dark-panel p-7">
-              <p class="uppercase text-xs text-[var(--gold)] font-extrabold">Predictive Insights</p>
-              <h3 class="text-2xl font-extrabold mt-4">Harvest Forecast</h3>
-              <div class="bg-white/8 rounded-xl p-5 mt-5">
-                <p class="text-sm text-gray-300">Optimal Harvest Date</p>
+              <p class="text-sm text-[var(--gold)] font-bold">ข้อมูลพยากรณ์</p>
+              <h3 class="text-2xl font-extrabold mt-4">แผนเก็บเกี่ยว</h3>
+              <div class="dark-data-group">
+                <p class="text-sm text-gray-300">วันเก็บเกี่ยวที่เหมาะสม</p>
                 <p id="fieldHarvestDate" class="text-4xl font-extrabold text-[var(--gold)]">-</p>
-                <p id="fieldHarvestDays" class="mt-2 text-sm">- days remaining</p>
+                <p id="fieldHarvestDays" class="mt-2 text-sm">ยังไม่มีกำหนดเก็บเกี่ยว</p>
               </div>
               <div class="grid grid-cols-2 gap-4 mt-5">
-                <div><p class="text-xs text-gray-300">Brix Forecast</p><p id="fieldBrix" class="text-2xl font-bold">0</p></div>
-                <div><p class="text-xs text-gray-300">Grade Proj.</p><p id="fieldGrade" class="text-2xl font-bold">-</p></div>
+                <div><p class="text-xs text-gray-300">ความหวานคาดการณ์</p><p id="fieldBrix" class="text-2xl font-bold">0</p></div>
+                <div><p class="text-xs text-gray-300">เกรดคาดการณ์</p><p id="fieldGrade" class="text-2xl font-bold">-</p></div>
               </div>
-              <div class="mt-5 bg-white/8 rounded-xl p-4">
-                <p class="text-xs text-gray-300 uppercase font-extrabold">Recommended Action</p>
+              <div class="dark-data-group">
+                <p class="text-sm text-gray-300 font-bold">งานที่แนะนำ</p>
                 <p id="fieldAction" class="text-lg font-extrabold mt-2">เลือกแปลงเพื่อดูคำแนะนำ</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div class="metric-card"><p class="text-xs font-bold">Soil Moisture</p><p class="text-2xl font-extrabold">68%</p><p class="text-xs text-gray-500">Stable trend</p></div>
-              <div class="metric-card"><p class="text-xs font-bold">Nitrogen</p><p class="text-2xl font-extrabold">Optimal</p><p class="text-xs text-gray-500">Action: Monitor</p></div>
+              <div class="metric-card"><p class="text-xs font-bold">ความชื้นในดิน</p><p id="fieldSoilMoisture" class="text-xl font-extrabold">ไม่มีเซนเซอร์</p><p class="text-xs text-gray-500">ต้องเชื่อมต่ออุปกรณ์</p></div>
+              <div class="metric-card"><p class="text-xs font-bold">ไนโตรเจน</p><p id="fieldNitrogen" class="text-xl font-extrabold">ยังไม่มีผลตรวจ</p><p class="text-xs text-gray-500">บันทึกผลตรวจเพื่อแสดงสถานะ</p></div>
             </div>
             <div class="soft-card p-5">
-              <h4 class="font-extrabold">Daily Environment Summary</h4>
+              <h4 class="font-extrabold">สรุปสภาพแวดล้อมล่าสุด</h4>
               <div class="mt-4 space-y-3 text-sm font-bold">
-                <div class="flex justify-between"><span>Avg Temp</span><span>31.2°C</span></div>
-                <div class="flex justify-between"><span>Solar Intensity</span><span>8.4 kW/m²</span></div>
-                <div class="flex justify-between text-red-600"><span>Precipitation Chance</span><span>12%</span></div>
+                <div class="flex justify-between"><span>อุณหภูมิเฉลี่ย</span><span id="fieldTempAvg">-</span></div>
+                <div class="flex justify-between"><span>ความชื้นเฉลี่ย</span><span id="fieldHumidityAvg">-</span></div>
+                <div class="flex justify-between text-red-600"><span>ฝนคาดการณ์ 72 ชม.</span><span id="fieldRain72h">-</span></div>
               </div>
             </div>
           </div>
         </div>
         <div class="soft-card p-7 mt-7">
-          <h3 class="text-2xl font-extrabold text-[var(--pine)]">Cultivar Intelligence</h3>
+          <h3 class="text-2xl font-extrabold text-[var(--pine)]">คำแนะนำตามพันธุ์สับปะรด</h3>
           <p id="cultivarInsight" class="text-gray-700 mt-2">เลือกหรือเพิ่มข้อมูลแปลงเพื่อดูคำแนะนำพันธุ์และคุณภาพ</p>
           <div id="cultivarActions" class="mt-5 flex flex-wrap gap-2"></div>
         </div>
       </section>
 
-      <section id="riskPage" class="page">
+      <section id="riskPage" class="page operator-only">
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-7">
           <div class="soft-card p-5">
             <div class="flex justify-between items-center mb-4">
-              <h2 class="text-3xl font-extrabold text-[var(--pine)]">3-Day Predictive Heatmap</h2>
-              <button onclick="exportAlertsCsv()" class="bg-white rounded-full px-4 py-2 font-bold text-sm">Export CSV</button>
+              <h1 class="section-title">แผนที่ความเสี่ยง 3 วัน</h1>
+              <button id="exportAlertsButton" onclick="exportAlertsCsv()" class="btn-secondary">ส่งออก CSV</button>
             </div>
             <div id="riskLeafletMap"></div>
           </div>
           <div class="space-y-5">
             <div class="dark-panel p-7">
-              <p class="uppercase text-xs font-bold text-white">Weather Context</p>
-              <h3 class="text-4xl font-extrabold mt-2">84% Humidity</h3>
-              <p class="text-sm mt-2 text-gray-200">High moisture levels expected for the next 48 hours.</p>
+              <p class="text-sm font-bold text-white">สภาพอากาศจากแปลง</p>
+              <p id="weatherHumidityValue" class="text-4xl font-extrabold mt-2">-</p>
+              <p id="weatherHumidityText" class="text-sm mt-2 text-gray-200">ยังไม่มีข้อมูลความชื้นล่าสุด</p>
               <div class="h-28 mt-5"><canvas id="weatherBars"></canvas></div>
             </div>
-            <div class="soft-card p-6 border-l-4 border-[var(--gold)]">
-              <h3 class="font-extrabold">Next Best Action</h3>
+            <div class="soft-card p-6">
+              <h3 class="font-extrabold">งานที่แนะนำ</h3>
               <p id="nextBestAction" class="text-sm text-gray-700 mt-3">ตรวจสอบแปลงเสี่ยงสูงและระบบระบายน้ำ</p>
-              <button class="mt-5 bg-[var(--gold)] rounded-lg px-4 py-3 font-extrabold w-full">Generate Task for Field Team</button>
+              <button id="generateTaskButton" type="button" onclick="generateFieldTask()" class="operator-write mt-5 bg-[var(--gold)] rounded-lg px-4 py-3 font-extrabold w-full">สร้างงานตรวจแปลง</button>
             </div>
           </div>
         </div>
         <div class="soft-card p-7 mt-7">
           <div class="flex justify-between items-center mb-5">
-            <h3 class="text-2xl font-extrabold">Upcoming Alerts & Anomalies</h3>
-            <button onclick="switchPage('dashboardPage')" class="bg-[#eef4ec] rounded-full px-4 py-2 text-sm font-bold">Filter by Risk</button>
+            <h3 class="text-2xl font-extrabold">แจ้งเตือนและความผิดปกติ</h3>
+            <label class="text-sm font-bold">กรองตามความเสี่ยง
+              <select id="riskFilter" class="form-select ml-2 w-auto inline-block" onchange="applyRiskFilter(this.value)">
+                <option value="all">ทั้งหมด</option><option value="High">สูง</option><option value="Medium">ปานกลาง</option><option value="Low">ต่ำ</option>
+              </select>
+            </label>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="uppercase text-xs text-gray-500">
-                <tr><th class="py-3">Farm</th><th>Risk Level</th><th>Expected Date</th><th>Recommended Action</th><th></th></tr>
+              <caption class="visually-hidden">รายการแจ้งเตือนแปลงและงานที่แนะนำ</caption>
+              <thead class="text-xs text-gray-500">
+                <tr><th scope="col" class="py-3">แปลง</th><th scope="col">ความเสี่ยง</th><th scope="col">กำหนด</th><th scope="col">งานที่แนะนำ</th><th scope="col"><span class="visually-hidden">การทำงาน</span></th></tr>
               </thead>
               <tbody id="alertTable"></tbody>
             </table>
@@ -305,17 +566,17 @@
         </div>
       </section>
 
-      <section id="gradingPage" class="page">
+      <section id="gradingPage" class="page operator-only">
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_310px] gap-7 mb-7">
           <div>
-            <p class="uppercase tracking-[.2em] text-[var(--olive)] font-extrabold">AI-powered insights</p>
-            <h2 class="text-4xl md:text-6xl font-extrabold text-[var(--pine)] leading-tight">ระบบคัดเกรดและพยากรณ์ผลผลิต</h2>
-            <p class="text-xl text-gray-700 mt-5 max-w-3xl">การวิเคราะห์คุณภาพแบบเรียลไทม์ผ่าน Grading AI เพื่อระบุสัดส่วนผลผลิตล่วงหน้าก่อนการเก็บเกี่ยว</p>
+            <p class="mode-note font-bold">การวิเคราะห์คุณภาพและผลผลิต</p>
+            <h1 class="section-title max-w-3xl">ระบบคัดเกรดและพยากรณ์ผลผลิต</h1>
+            <p class="text-base text-gray-700 mt-4 max-w-3xl">ประเมินคุณภาพและสัดส่วนผลผลิตล่วงหน้า เพื่อช่วยวางแผนก่อนเก็บเกี่ยว</p>
           </div>
-          <div class="metric-card flex justify-between items-center">
-            <div><p class="text-sm font-bold text-gray-500">ความมั่นใจเฉลี่ย</p><p id="aiAccuracy" class="text-4xl font-extrabold text-[var(--pine)]">0%</p></div>
+          <div class="border-y border-[var(--field-border)] py-4 flex justify-between items-center gap-5">
+            <div><p class="text-sm font-bold text-gray-500">ความมั่นใจเฉลี่ย</p><p id="aiAccuracy" class="text-2xl font-extrabold text-[var(--pine)]">0%</p></div>
             <div class="h-16 w-px bg-gray-200"></div>
-            <div><p class="text-sm font-bold text-gray-500">พื้นที่พยากรณ์</p><p id="forecastArea" class="text-4xl font-extrabold text-[var(--pine)]">0</p><p class="text-xl font-bold">ไร่</p></div>
+            <div><p class="text-sm font-bold text-gray-500">พื้นที่พยากรณ์</p><p class="text-2xl font-extrabold text-[var(--pine)]"><span id="forecastArea">0</span> <span class="text-base">ไร่</span></p></div>
           </div>
         </div>
 
@@ -326,30 +587,32 @@
             <div class="h-72 mt-8"><canvas id="gradeYieldChart"></canvas></div>
           </div>
           <div class="dark-panel p-9 text-center">
-            <div class="quality-ring"><div class="quality-ring-inner"><div><p id="qualityPct" class="text-5xl font-extrabold">0%</p><p class="uppercase text-xs tracking-[.2em]">High Quality</p></div></div></div>
+            <div class="quality-ring"><div class="quality-ring-inner"><div><p id="qualityPct" class="text-5xl font-extrabold">0%</p><p class="text-xs">คุณภาพสูง</p></div></div></div>
             <h3 class="text-2xl font-extrabold mt-8">สัดส่วนคุณภาพภาพรวม</h3>
             <p class="text-[#b8d7ca] mt-3">ผลผลิตส่วนใหญ่มีคุณภาพอยู่ในระดับส่งออกหรือโรงงาน</p>
-            <div class="grid grid-cols-3 gap-4 mt-8">
-              <div class="bg-white/8 rounded-lg p-4"><p class="text-sm text-[#b8d7ca]">หวาน</p><p id="qualityBrix" class="text-2xl font-bold">0</p></div>
-              <div class="bg-white/8 rounded-lg p-4"><p class="text-sm text-[#b8d7ca]">น้ำหนัก</p><p id="qualityWeight" class="text-2xl font-bold">0</p></div>
-              <div class="bg-white/8 rounded-lg p-4"><p class="text-sm text-[#b8d7ca]">เสี่ยง</p><p id="qualityRisk" class="text-2xl font-bold">0%</p></div>
+            <div class="dark-stat-row">
+              <div class="dark-stat"><p class="text-sm text-[#b8d7ca]">ความหวาน</p><p id="qualityBrix" class="text-2xl font-bold">0</p></div>
+              <div class="dark-stat"><p class="text-sm text-[#b8d7ca]">น้ำหนัก</p><p id="qualityWeight" class="text-2xl font-bold">0</p></div>
+              <div class="dark-stat"><p class="text-sm text-[#b8d7ca]">ความเสี่ยง</p><p id="qualityRisk" class="text-2xl font-bold">0%</p></div>
             </div>
           </div>
         </div>
 
-        <div class="soft-card p-7 md:p-8 mt-7" id="modelIntelligencePanel">
+        <details class="soft-card mt-7 advanced-panel" id="modelIntelligencePanel">
+          <summary>การจัดการโมเดลขั้นสูง <span class="text-sm font-normal text-gray-500 ml-2">สำหรับผู้ดูแลระบบ</span></summary>
+          <div class="px-7 pb-7 md:px-8 md:pb-8">
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div>
-              <p class="uppercase tracking-[.16em] text-xs text-[var(--olive)] font-extrabold">Model Management</p>
-              <h3 class="text-3xl font-extrabold text-[var(--pine)] mt-1">Model Intelligence</h3>
+              <p class="text-xs text-[var(--olive)] font-extrabold">ผู้ดูแลระบบ</p>
+              <h3 class="text-3xl font-extrabold text-[var(--pine)] mt-1">สถานะโมเดลพยากรณ์</h3>
               <p class="text-gray-600 mt-2">สถานะโมเดลพยากรณ์ที่ใช้งานจริงและผลประเมินจากข้อมูลนอกชุดฝึก</p>
             </div>
             <div class="flex flex-col sm:flex-row gap-3">
-              <button type="button" onclick="recordObservedOutcome()" class="border border-[var(--pine)] text-[var(--pine)] bg-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap">
-                Record Observed Outcome
+              <button type="button" onclick="recordObservedOutcome()" class="operator-write border border-[var(--pine)] text-[var(--pine)] bg-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap">
+                บันทึกผลจริง
               </button>
-              <button type="button" onclick="trainMLModels()" class="bg-[var(--pine)] text-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap">
-                Train New Challenger
+              <button id="trainModelsButton" type="button" onclick="trainMLModels()" class="operator-write bg-[var(--pine)] text-white rounded-lg px-5 py-3 font-extrabold whitespace-nowrap" hidden>
+                ฝึกโมเดลทดลองใหม่
               </button>
             </div>
           </div>
@@ -410,96 +673,154 @@
               <div class="md:col-span-3"><p class="text-gray-500">Training data quality</p><p id="modelDataQuality" class="font-bold mt-1">-</p></div>
             </div>
           </details>
-        </div>
+          </div>
+        </details>
 
         <div class="soft-card p-8 mt-7">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
             <div>
-              <h3 class="text-3xl font-extrabold">AI Quality Analysis</h3>
+              <h3 class="text-3xl font-extrabold">ผลวิเคราะห์คุณภาพจาก AI</h3>
               <p class="text-gray-600">ตัวอย่างภาพล่าสุดพร้อมผลคัดเกรดและความมั่นใจ</p>
             </div>
-            <button onclick="switchPage('registerPage')" class="bg-[var(--pine)] text-white rounded-lg px-6 py-3 font-extrabold">Re-scan Samples</button>
+            <button onclick="prepareImageRescan()" class="operator-write bg-[var(--pine)] text-white rounded-lg px-6 py-3 font-extrabold">เพิ่มภาพเพื่อวิเคราะห์ใหม่</button>
           </div>
           <div id="sampleCards" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-7 mt-7">
-          <div class="bg-[#ffe36b] rounded-2xl p-9">
-            <p class="text-4xl mb-5">●</p>
-            <h3 class="text-3xl font-extrabold">สรุปแผนการตลาดล่วงหน้า</h3>
-            <p id="marketPlanText" class="mt-6 text-lg">เพิ่มข้อมูลแปลงเพื่อสร้างคำแนะนำตลาด</p>
-            <button class="mt-8 bg-black text-white rounded-lg px-5 py-4 font-extrabold w-full">ดูรายละเอียดสัญญาซื้อขาย</button>
+          <div class="border-y border-[var(--field-border)] py-8">
+            <p class="mode-note">การวางแผนผลผลิต</p>
+            <h3 class="text-2xl font-extrabold mt-2">สรุปแผนการตลาดล่วงหน้า</h3>
+            <p id="marketPlanText" class="mt-4 text-base">เพิ่มข้อมูลแปลงเพื่อสร้างคำแนะนำตลาด</p>
+            <p class="mode-note mt-6">ข้อมูลตลาดจะแสดงเมื่อมีแหล่งข้อมูลที่ยืนยันแล้ว</p>
           </div>
-          <div class="bg-[#e4e9e3] rounded-2xl p-9 flex flex-col md:flex-row gap-8 md:items-center">
-            <div class="border-4 border-red-600 rounded-xl w-40 h-40 grid place-items-center shrink-0"><p id="productionRiskLevel" class="text-3xl font-extrabold text-red-600">Low</p></div>
+          <div class="border-y border-[var(--field-border)] py-8 flex flex-col md:flex-row gap-8 md:items-center">
+            <div class="min-w-40 shrink-0"><p class="mode-note">ระดับความเสี่ยง</p><p id="productionRiskLevel" class="text-3xl font-extrabold text-red-700 mt-2">ต่ำ</p></div>
             <div>
               <h3 class="text-3xl font-extrabold">การประเมินความเสี่ยงการผลิต</h3>
               <p id="productionRiskText" class="text-gray-700 mt-4 text-lg">ระบบยังไม่พบสัญญาณความเสี่ยงรุนแรงจากข้อมูลล่าสุด</p>
-              <div class="mt-5 flex flex-wrap gap-3">
-                <span class="bg-red-100 text-red-700 rounded-full px-4 py-2 font-bold text-sm">High Humidity</span>
-                <span class="bg-white text-gray-700 rounded-full px-4 py-2 font-bold text-sm">Pest Free</span>
-              </div>
+              <div id="productionRiskTags" class="mt-5 flex flex-wrap gap-3"></div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="registerPage" class="page">
+      <section id="reportPage" class="page">
+        <div class="report-layout">
+          <div class="workspace-heading">
+            <div>
+              <h1 id="reportPageTitle">ภาพรวมสถานการณ์แปลง</h1>
+              <p id="reportPageDescription" class="mt-2">ตัวเลขสำคัญ แนวโน้มผลผลิต และสัดส่วนความเสี่ยงในมุมมองเดียว</p>
+            </div>
+            <div class="flex flex-wrap items-center justify-end gap-3">
+              <label class="forecast-context" for="reportForecastPeriodSelect"><span>ช่วงรายงาน</span><select id="reportForecastPeriodSelect" class="forecast-period-select" aria-label="เลือกช่วงสำหรับรายงาน"></select></label>
+              <button id="modeSwitchButton" type="button" class="mode-control" aria-pressed="false" aria-label="เปิดโหมดดูรายงาน" onclick="toggleUserMode()"><span id="modeSwitchLabel">ดูรายงาน</span></button>
+            </div>
+          </div>
+
+          <div id="guestNotice" class="guest-notice" hidden>
+            <div><p class="font-bold text-[var(--pine)]">กำลังแสดงข้อมูลสาธารณะแบบอ่านอย่างเดียว</p><p id="publicOverviewNote" class="mode-note mt-1">แสดงชื่อแปลง พิกัดบนแผนที่ และภาพแปลงจริง การเพิ่มและแก้ไขข้อมูลจำกัดเฉพาะเจ้าหน้าที่</p></div>
+          </div>
+
+          <nav class="report-tabs" aria-label="หัวข้อรายงาน">
+            <button type="button" class="report-tab active" data-report-tab="overview">ภาพรวม</button>
+            <button type="button" class="report-tab" data-report-tab="risk">แนวโน้มความเสี่ยง</button>
+            <button type="button" class="report-tab" data-report-tab="forecast">พยากรณ์ผลผลิต</button>
+            <button type="button" class="report-tab" data-report-tab="exports">ส่งออกรายงาน</button>
+          </nav>
+
+          <dl id="reportSummaryRibbon" class="summary-ribbon" aria-label="สรุปรายงาน">
+            <div><dt>จำนวนแปลง</dt><dd id="reportPlotCount">0</dd></div>
+            <div><dt>พื้นที่รวม (ไร่)</dt><dd id="reportAreaCount">0</dd></div>
+            <div><dt>เสี่ยงสูง</dt><dd id="reportHighRiskCount">0</dd></div>
+            <div><dt>ผลผลิตคาดการณ์ (ตัน)</dt><dd id="reportYieldCount">0</dd></div>
+          </dl>
+
+          <section class="report-panel" data-report-panel="overview">
+            <div class="report-chart-grid">
+              <div class="forecast-chart-panel"><div class="forecast-summary"><div><h2 class="panel-title">แนวโน้มผลผลิต</h2><p class="mode-note mt-1">ประมาณการตามช่วงเก็บเกี่ยว</p></div><p class="mode-note">ข้อมูลล่าสุดจากทุกแปลง</p></div><div class="report-chart mt-5"><canvas id="reportYieldChart"></canvas></div></div>
+              <div class="forecast-chart-panel"><h2 class="panel-title">สัดส่วนความเสี่ยง</h2><p class="mode-note mt-1">จำนวนแปลงแยกตามระดับ</p><div class="report-chart mt-5"><canvas id="reportRiskChart"></canvas></div></div>
+            </div>
+          </section>
+
+          <section class="report-panel" data-report-panel="risk" hidden>
+            <div class="forecast-chart-panel">
+              <div class="forecast-summary"><div><h2 class="panel-title">ภาพรวมระดับความเสี่ยง</h2><p class="mode-note mt-1">เปรียบเทียบจำนวนแปลงปกติ เฝ้าระวัง และเสี่ยงสูง</p></div><label id="reportRiskFilterWrap" class="mode-note">ระดับความเสี่ยง<select id="reportRiskFilter" class="form-select mt-1" onchange="renderReportTable()"><option value="all">ทั้งหมด</option><option value="High">สูง</option><option value="Medium">ปานกลาง</option><option value="Low">ต่ำ</option></select></label></div>
+              <div class="report-chart mt-5"><canvas id="reportRiskDetailChart"></canvas></div>
+              <div id="reportFarmTableWrap" class="overflow-x-auto mt-5"><table class="report-table w-full text-left"><caption class="visually-hidden">รายงานสถานะแปลงตามระดับความเสี่ยง</caption><thead><tr><th scope="col">แปลง</th><th scope="col">พันธุ์</th><th scope="col">ความเสี่ยง</th><th scope="col">กำหนดเก็บเกี่ยว</th><th scope="col">ผลผลิตคาดการณ์</th><th scope="col">อัปเดตล่าสุด</th></tr></thead><tbody id="reportFarmTable"></tbody></table></div>
+            </div>
+          </section>
+
+          <section class="report-panel" data-report-panel="forecast" hidden>
+            <div class="forecast-chart-panel"><div class="forecast-summary"><div><h2 class="panel-title">พยากรณ์ผลผลิตและช่วงเก็บเกี่ยว</h2><p class="mode-note mt-1">ใช้วางแผนแรงงาน การคัดเกรด และตลาดปลายทาง</p></div><p id="reportForecastNote" class="font-bold text-[var(--pine)]">รอข้อมูลพยากรณ์</p></div><div class="report-chart mt-5"><canvas id="reportForecastChart"></canvas></div></div>
+          </section>
+
+          <section class="report-panel" data-report-panel="exports" hidden>
+            <div class="forecast-chart-panel">
+              <h2 class="panel-title">ส่งออกรายงาน</h2><p class="mt-2 max-w-[70ch] text-gray-700">ดาวน์โหลดข้อมูลสถานะแปลงล่าสุดเพื่อใช้ประชุม วางแผนเก็บเกี่ยว หรือจัดทำรายงานต่อหน่วยงานที่เกี่ยวข้อง</p>
+              <div class="mt-5 flex flex-wrap gap-3"><button type="button" class="btn-primary" onclick="exportFarmReportCsv()">ดาวน์โหลดสถานะแปลง CSV</button><button type="button" class="btn-secondary" onclick="exportAlertsCsv()">ดาวน์โหลดรายการเสี่ยง CSV</button></div>
+              <p id="reportExportStatus" role="status" aria-live="polite" class="mode-note mt-4">ไฟล์จะใช้ข้อมูลที่แสดงล่าสุดในระบบ</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="registerPage" class="page operator-only">
         <div class="mb-7">
-          <h2 class="text-4xl font-extrabold text-[var(--pine)]">ลงทะเบียนแปลงปลูก</h2>
+          <h1 class="section-title">ลงทะเบียนแปลงปลูก</h1>
           <p class="text-gray-600 mt-2">บันทึกข้อมูลแปลง วิเคราะห์ภาพ และอัปเดตแดชบอร์ด</p>
         </div>
         <div class="soft-card p-6 md:p-8 max-w-4xl">
-          <form id="pineappleForm" onsubmit="submitForm(event)" class="space-y-6" novalidate>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label class="font-bold">ชื่อแปลง / เกษตรกร<input class="form-input mt-1" type="text" name="farmName"></label>
-              <label class="font-bold">พื้นที่ปลูก (ไร่)<input class="form-input mt-1" type="number" step="0.1" name="plantArea" min="0.1"></label>
-              <label class="font-bold">พันธุ์สับปะรด<select class="form-select mt-1" name="variety"><option value="ปัตตาเวีย">ปัตตาเวีย</option><option value="MD2">MD2</option><option value="ภูแล">ภูแล</option><option value="อื่นๆ">อื่นๆ</option></select></label>
-              <label class="font-bold">จำนวนต้นต่อไร่<input class="form-input mt-1" type="number" name="plantDensity" value="7000" min="1"></label>
-              <label class="font-bold">วันที่เริ่มปลูก<input class="form-input mt-1" type="date" name="plantingDate"></label>
-              <label class="font-bold">วันที่บังคับดอก<input class="form-input mt-1" type="date" name="forcingDate"></label>
+          <form id="pineappleForm" onsubmit="submitForm(event)" novalidate>
+            <div class="stepper" aria-label="ขั้นตอนลงทะเบียนแปลง">
+              <div class="stepper-item active" data-step="1"><span>ข้อมูลพื้นฐาน</span></div><div class="stepper-item" data-step="2"><span>สภาพแปลง</span></div><div class="stepper-item" data-step="3"><span>ตำแหน่ง</span></div><div class="stepper-item" data-step="4"><span>ภาพและ AI</span></div><div class="stepper-item" data-step="5"><span>ตรวจสอบ</span></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label class="font-bold">การระบายน้ำ<select class="form-select mt-1" name="soilDrainage"><option value="">เลือก</option><option value="good">ดี</option><option value="moderate">ปานกลาง</option><option value="poor">แย่</option></select></label>
-              <label class="font-bold">ประเภทดิน<select class="form-select mt-1" name="soilType"><option value="ดินร่วน">ดินร่วน</option><option value="ดินทราย">ดินทราย</option><option value="ดินเหนียว">ดินเหนียว</option><option value="อื่นๆ">อื่นๆ</option></select></label>
-              <label class="font-bold">ระบบน้ำ<select class="form-select mt-1" name="irrigation"><option value="น้ำฝน">น้ำฝน</option><option value="น้ำหยด">น้ำหยด</option><option value="สปริงเกอร์">สปริงเกอร์</option><option value="ไม่มีระบบน้ำ">ไม่มีระบบน้ำ</option></select></label>
-              <label class="font-bold">คะแนนระบายน้ำ (1-5)<input class="form-input mt-1" type="number" name="drainageScore" value="3" min="1" max="5"></label>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between gap-4 mb-3">
-                <label class="font-bold">พิกัดแปลงปลูก</label>
-                <button type="button" onclick="useCurrentLocation()" class="bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold">ใช้ตำแหน่งปัจจุบัน</button>
+            <section class="form-step active" data-form-step="1">
+              <h3 class="text-2xl font-extrabold text-[var(--pine)] mb-2">ข้อมูลพื้นฐาน</h3><p class="text-gray-600 mb-5">กรอกข้อมูลหลักที่ใช้คำนวณแผนผลิต</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="font-bold">ชื่อแปลง / เกษตรกร <span class="text-red-600" aria-hidden="true">*</span><input class="form-input mt-1" type="text" name="farmName" autocomplete="organization" maxlength="100" required></label>
+                <label class="font-bold">พื้นที่ปลูก (ไร่) <span class="text-red-600">*</span><input class="form-input mt-1" type="number" inputmode="decimal" step="0.1" name="plantArea" min="0.1" required></label>
+                <label class="font-bold">พันธุ์สับปะรด<select class="form-select mt-1" name="variety"><option value="ปัตตาเวีย">ปัตตาเวีย</option><option value="MD2">MD2</option><option value="ภูแล">ภูแล</option><option value="อื่นๆ">อื่นๆ</option></select></label>
+                <label class="font-bold">จำนวนต้นต่อไร่<input class="form-input mt-1" type="number" inputmode="numeric" name="plantDensity" value="7000" min="1"></label>
+                <label class="font-bold">วันที่เริ่มปลูก <span class="text-red-600">*</span><input class="form-input mt-1" type="date" name="plantingDate" required></label>
+                <label class="font-bold">วันที่บังคับดอก <span class="text-red-600">*</span><input class="form-input mt-1" type="date" name="forcingDate" required></label>
               </div>
-              <div id="formMap"></div>
-              <div class="grid grid-cols-2 gap-4 mt-3">
-                <input class="form-input bg-gray-100" id="latitude" name="latitude" placeholder="Lat..." readonly>
-                <input class="form-input bg-gray-100" id="longitude" name="longitude" placeholder="Lng..." readonly>
+            </section>
+
+            <section class="form-step" data-form-step="2">
+              <h3 class="text-2xl font-extrabold text-[var(--pine)] mb-2">สภาพแปลง</h3><p class="text-gray-600 mb-5">ช่วยให้ระบบประเมินความเสี่ยงและการระบายน้ำ</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="font-bold">การระบายน้ำ <span class="text-red-600">*</span><select class="form-select mt-1" name="soilDrainage" required><option value="">เลือกสภาพ</option><option value="good">ดี</option><option value="moderate">ปานกลาง</option><option value="poor">แย่</option></select></label>
+                <label class="font-bold">ประเภทดิน<select class="form-select mt-1" name="soilType"><option value="ดินร่วน">ดินร่วน</option><option value="ดินทราย">ดินทราย</option><option value="ดินเหนียว">ดินเหนียว</option><option value="อื่นๆ">อื่นๆ</option></select></label>
+                <label class="font-bold">ระบบน้ำ<select class="form-select mt-1" name="irrigation"><option value="น้ำฝน">น้ำฝน</option><option value="น้ำหยด">น้ำหยด</option><option value="สปริงเกอร์">สปริงเกอร์</option><option value="ไม่มีระบบน้ำ">ไม่มีระบบน้ำ</option></select></label>
+                <label class="font-bold">คะแนนระบายน้ำ<select class="form-select mt-1" name="drainageScore"><option value="1">1 - แย่มาก</option><option value="2">2 - แย่</option><option value="3" selected>3 - ปานกลาง</option><option value="4">4 - ดี</option><option value="5">5 - ดีมาก</option></select></label>
               </div>
-            </div>
+            </section>
 
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 text-center">
-              <label class="font-bold block mb-3">วิเคราะห์ความสุกด้วย AI</label>
-              <input type="file" id="pineappleImage" accept="image/*" class="hidden" onchange="previewImage(this)">
-              <label for="pineappleImage" class="inline-block bg-blue-700 text-white px-5 py-3 rounded-lg cursor-pointer font-bold">เลือก/ถ่ายภาพ</label>
-              <img id="imagePreview" src="#" class="hidden max-h-52 rounded-lg shadow mx-auto mt-4">
-              <div id="gradeResult" class="hidden mt-4 p-3 bg-white rounded-lg border border-purple-200 text-left">
-                <p><b>ผลการคัดเกรด:</b> <span id="gradeLevel" class="font-semibold text-purple-700"></span></p>
-                <p class="mt-2 text-sm"><b>คุณภาพภาพ:</b> <span id="imageQualityText">-</span></p>
-                <p class="mt-1 text-sm"><b>รายละเอียด:</b> <span id="ripenessDetail">-</span></p>
-              </div>
-            </div>
+            <section class="form-step" data-form-step="3">
+              <h3 class="text-2xl font-extrabold text-[var(--pine)] mb-2">ตำแหน่งแปลง</h3><p class="text-gray-600 mb-5">ใช้ตำแหน่งปัจจุบันหรือแตะแผนที่เพื่อปักหมุด</p>
+              <div class="flex items-center justify-between gap-4 mb-3"><label class="font-bold">พิกัดแปลงปลูก <span class="text-red-600">*</span></label><button type="button" onclick="useCurrentLocation()" class="btn-primary">ใช้ตำแหน่งปัจจุบัน</button></div>
+              <div id="formMap"></div><input type="hidden" id="latitude" name="latitude" required><input type="hidden" id="longitude" name="longitude" required>
+              <div id="statusLocation" role="status" aria-live="polite" class="mt-3 bg-gray-100 text-[var(--ink)] border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">พิกัด: ยังไม่พร้อม</div>
+            </section>
 
-            <textarea class="form-textarea" name="notes" rows="2" placeholder="หมายเหตุ เช่น ปุ๋ยที่ใช้ ปัญหาในแปลง หรือข้อสังเกต"></textarea>
+            <section class="form-step" data-form-step="4">
+              <h3 class="text-2xl font-extrabold text-[var(--pine)] mb-2">ภาพและการวิเคราะห์ AI</h3><p class="text-gray-600 mb-5">ภาพเป็นข้อมูลเสริม สามารถข้ามขั้นตอนนี้ได้</p>
+              <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 text-center">
+                <input type="file" id="pineappleImage" accept="image/*" capture="environment" class="visually-hidden" onchange="previewImage(this)"><label for="pineappleImage" class="inline-block bg-[var(--pine)] text-white px-5 py-3 rounded-lg cursor-pointer font-bold">ถ่ายหรือเลือกภาพ</label>
+                <p id="imageHint" class="text-sm text-gray-500 mt-3">ใช้ภาพที่สว่าง ชัด และเห็นผลสับปะรดเต็มผล</p><img id="imagePreview" src="logo.png" alt="ภาพสับปะรดที่เลือก" class="hidden max-h-52 rounded-lg shadow mx-auto mt-4" decoding="async">
+                <div id="gradeResult" class="hidden mt-4 p-3 bg-white rounded-lg border border-[var(--field-border)] text-left"><p><b>ผลการคัดเกรด:</b> <span id="gradeLevel" role="status" aria-live="polite" class="font-semibold text-[var(--pine)]"></span></p><p class="mt-2 text-sm"><b>คุณภาพภาพ:</b> <span id="imageQualityText">-</span></p><p class="mt-1 text-sm"><b>รายละเอียด:</b> <span id="ripenessDetail">-</span></p></div>
+              </div><div id="statusImage" role="status" aria-live="polite" class="mt-3 bg-gray-100 text-[var(--ink)] border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">รูปภาพ: ยังไม่มี</div><div id="statusAi" role="status" aria-live="polite" class="mt-2 bg-gray-100 text-[var(--ink)] border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">AI: รอวิเคราะห์</div>
+            </section>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div id="statusLocation" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">พิกัด: ยังไม่พร้อม</div>
-              <div id="statusImage" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">รูปภาพ: ยังไม่มี</div>
-              <div id="statusAi" class="bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-3 py-2 text-center font-semibold">AI: รอวิเคราะห์</div>
-            </div>
+            <section class="form-step" data-form-step="5">
+              <h3 class="text-2xl font-extrabold text-[var(--pine)] mb-2">ตรวจสอบก่อนบันทึก</h3><p class="text-gray-600 mb-5">ตรวจความถูกต้องและเพิ่มหมายเหตุถ้าจำเป็น</p>
+              <div id="formReview" class="bg-[#f4f8f2] border border-[#dfe9dd] rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
+              <label class="font-bold block mt-5">หมายเหตุ<textarea class="form-textarea mt-1" name="notes" rows="3" maxlength="500" placeholder="ปุ๋ยที่ใช้ ปัญหาในแปลง หรือข้อสังเกต"></textarea></label>
+            </section>
 
-            <button id="submitButton" type="submit" class="w-full bg-[var(--pine)] hover:bg-[#002f20] text-white font-extrabold py-4 px-4 rounded-xl shadow-md">บันทึกข้อมูลและวิเคราะห์ผล</button>
+            <div class="step-actions"><button id="previousStepButton" type="button" class="btn-secondary invisible" onclick="changeFormStep(-1)">ย้อนกลับ</button><p id="stepPosition" class="self-center text-sm text-gray-500 font-bold">ขั้นตอน 1 จาก 5</p><button id="nextStepButton" type="button" class="btn-primary" onclick="changeFormStep(1)">ถัดไป</button><button id="submitButton" type="submit" class="btn-primary hidden">บันทึกแปลง</button></div>
           </form>
         </div>
       </section>
@@ -511,6 +832,7 @@
     const TM_URL = "https://teachablemachine.withgoogle.com/models/g9bHNIOuJ/";
     const RIPENESS_MODEL_VERSION = "tm-g9bHNIOuJ-runtime-v2";
     let aiModel;
+    let aiModelPromise;
     let formMap;
     let formMarker;
     let dashboardMap;
@@ -528,22 +850,415 @@
     let allFarmsData = [];
     let dashboardData = null;
     let charts = {};
+    let currentFormStep = 1;
+    let activeRiskFilter = 'all';
+    let activeQueueFilter = 'all';
+    let selectedDashboardFarm = null;
+    let operationalItems = [];
+    let activeReportView = 'overview';
+    let activeReportData = null;
+    let currentSessionUser = null;
+    let canOperate = false;
+    let canAdminister = false;
+    let loginCsrfToken = '';
+    let googleClientId = '';
+    let activeForecastPeriod = '';
+    let activeDashboardSearch = '';
+    let lastSuccessfulSyncAt = null;
+    let dashboardIsStale = false;
+    let serviceConnectionState = 'checking';
+    let savedUserMode = 'operator';
+    try { savedUserMode = localStorage.getItem('smart-pineapple-mode') || 'operator'; } catch (error) { savedUserMode = 'operator'; }
+    let currentUserMode = 'viewer';
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('[data-page]').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
-      tmImage.load(TM_URL + "model.json", TM_URL + "metadata.json").then(model => {
-        aiModel = model;
-        updateRipenessModelBadge(true);
-      }).catch(() => updateRipenessModelBadge(false));
+      document.querySelectorAll('[data-report-view]').forEach(btn => btn.addEventListener('click', () => setReportView(btn.dataset.reportView)));
+      document.querySelectorAll('[data-report-tab]').forEach(btn => btn.addEventListener('click', () => setReportView(btn.dataset.reportTab)));
+      document.querySelectorAll('[data-queue-filter]').forEach(btn => btn.addEventListener('click', () => setQueueFilter(btn.dataset.queueFilter)));
+      let searchTimer;
+      document.getElementById('globalSearch')?.addEventListener('input', () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(applyFilters, 180);
+      });
+      if (window.Chart) {
+        Chart.defaults.font.family = "'Kanit', sans-serif";
+        Chart.defaults.font.lineHeight = 1.4;
+      }
+      updateRipenessModelBadge('idle');
       initDashboardMap();
-      initFormMap();
-      loadDashboard();
+      showFormStep(1);
+      restoreFormDraft();
+      document.getElementById('pineappleForm')?.addEventListener('change', saveFormDraft);
+      window.addEventListener('online', () => setConnectionBadge(true));
+      window.addEventListener('offline', () => setConnectionBadge(false));
+      setConnectionBadge(navigator.onLine);
+      ['forecastPeriodSelect', 'reportForecastPeriodSelect'].forEach(id => document.getElementById(id)?.addEventListener('change', event => {
+        activeForecastPeriod = event.target.value;
+        syncForecastPeriodControls();
+        if (dashboardData) renderScopedViews(dashboardData);
+        else loadPublicDashboard();
+      }));
+      await initializeSession();
     });
 
+    async function initializeSession() {
+      setText('authMessage', 'กำลังตรวจสอบ session...');
+      try {
+        const response = await fetch('/api/session', { credentials: 'include', headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        loginCsrfToken = data.csrfToken || '';
+        googleClientId = data.googleClientId || '';
+        if (data.authenticated && data.user) return activateSession(data.user, data.forecastPeriod);
+        activateGuestSession(data.forecastPeriod, googleClientId);
+      } catch (error) {
+        activateGuestSession('', '', 'ยังเชื่อมต่อระบบยืนยันตัวตนไม่ได้ คุณสามารถสำรวจหน้ารายงานก่อนได้');
+      }
+    }
+
+    function guestDashboardData() {
+      return { farms: [], totalYield: 0, totalArea: 0, totalBrix: 0, countBrix: 0, totalRevenue: 0, urgentTasks: [], harvestSoon: [], noPhoto: [], monthlyYields: {}, risks: { Low: 0, Medium: 0, High: 0 }, aiGrades: { Level0: 0, Level1: 0, Level2: 0, Level3: 0, Unknown: 0 }, actuals: { count: 0, totalYield: 0, totalPredictedYield: 0 } };
+    }
+
+    function activateGuestSession(configuredForecastPeriod = '', clientId = '', message = '') {
+      currentSessionUser = null;
+      canOperate = false;
+      canAdminister = false;
+      googleClientId = clientId || googleClientId;
+      currentUserMode = 'guest';
+      document.getElementById('operationsQueueTitle')?.setAttribute('hidden', '');
+      setText('profileName', 'ผู้เยี่ยมชม');
+      setText('profileRole', 'ยังไม่ได้เข้าสู่ระบบ');
+      setText('profileStation', 'กำลังโหลดสถานีสาธารณะ...');
+      setText('profileModeNote', message || 'ดูข้อมูลสาธารณะได้ · เพิ่มและแก้ไขไม่ได้');
+      setText('profileEmail', 'ไม่จำเป็นต้องเข้าสู่ระบบเพื่อดูข้อมูล');
+      document.getElementById('logoutButton')?.setAttribute('hidden', '');
+      document.getElementById('dashboardLoginButton')?.removeAttribute('hidden');
+      document.getElementById('guestNotice')?.removeAttribute('hidden');
+      document.getElementById('reportFarmTableWrap')?.removeAttribute('hidden');
+      document.getElementById('reportRiskFilterWrap')?.removeAttribute('hidden');
+      populateForecastPeriods(configuredForecastPeriod);
+      setGuestMode();
+      setText('profileModeNote', message || 'ดูข้อมูลสาธารณะได้ · เพิ่มและแก้ไขไม่ได้');
+      const switchButton = document.getElementById('modeSwitchButton');
+      if (switchButton) switchButton.hidden = true;
+      activeReportData = buildForecastScope(guestDashboardData());
+      renderReportPage(activeReportData);
+      document.getElementById('authGate')?.setAttribute('hidden', '');
+      loadPublicDashboard();
+    }
+
+    function setGuestMode() {
+      document.body.classList.add('guest-session');
+      document.getElementById('operatorNav')?.removeAttribute('hidden');
+      document.getElementById('reportNav')?.setAttribute('hidden', '');
+      document.querySelectorAll('.operator-only').forEach(element => element.removeAttribute('hidden'));
+      document.getElementById('registerPage')?.setAttribute('hidden', '');
+      switchPage('dashboardPage');
+    }
+
+    async function loadPublicDashboard() {
+      if (currentSessionUser) return;
+      const preserveCurrent = Boolean(dashboardData);
+      setDashboardState('loading', '', preserveCurrent);
+      try {
+        const response = await callAppsScript('getPublicDashboardData', {});
+        if (!response.success) throw new Error(response.message || 'โหลดข้อมูลสาธารณะไม่สำเร็จ');
+        const publicData = response.data || {};
+        dashboardData = { ...guestDashboardData(), ...publicData, farms: publicData.farms || [] };
+        allFarmsData = dashboardData.farms;
+        lastSuccessfulSyncAt = new Date(publicData.updatedAt || Date.now());
+        dashboardIsStale = false;
+        activeReportData = buildForecastScope(dashboardData);
+        renderScopedViews(dashboardData);
+        setDashboardState('ready');
+        setText('profileStation', publicData.station ? `สถานี${publicData.station}` : 'ข้อมูลสาธารณะ');
+        setText('publicOverviewNote', `ข้อมูลสาธารณะ${publicData.station ? `สถานี${publicData.station}` : ''} · ${allFarmsData.length} แปลง · แสดงชื่อ พิกัด และภาพแปลงจริงแบบอ่านอย่างเดียว`);
+        updateDataFreshness();
+      } catch (error) {
+        dashboardIsStale = Boolean(dashboardData);
+        updateDataFreshness();
+        setDashboardState('error', error.message, dashboardIsStale);
+        setText('publicOverviewNote', 'ยังโหลดข้อมูลสาธารณะไม่ได้ กรุณาลองใหม่ภายหลัง');
+      }
+    }
+
+    async function openLogin() {
+      try {
+        const response = await fetch('/api/session', { credentials: 'include', headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        loginCsrfToken = data.csrfToken || '';
+        googleClientId = data.googleClientId || googleClientId;
+        if (data.authenticated && data.user) return activateSession(data.user, data.forecastPeriod);
+      } catch (error) { /* The login panel will explain that authentication is unavailable. */ }
+      showLoginGate(googleClientId, googleClientId ? '' : 'ระบบยืนยันตัวตนยังไม่พร้อม กรุณาตรวจการตั้งค่าเซิร์ฟเวอร์');
+    }
+
+    function closeLogin() {
+      document.getElementById('authGate')?.setAttribute('hidden', '');
+      const dashboardLogin = document.getElementById('dashboardLoginButton');
+      const returnTarget = dashboardLogin && !dashboardLogin.hidden ? dashboardLogin : document.getElementById('mainContent');
+      returnTarget?.focus({ preventScroll: true });
+    }
+
+    function showLoginGate(clientId = googleClientId, message = '') {
+      document.getElementById('authGate')?.removeAttribute('hidden');
+      document.getElementById('authTitle')?.focus({ preventScroll: true });
+      setText('authMessage', message || (clientId ? 'กรุณาเลือกบัญชีที่ได้รับสิทธิ์' : 'ยังไม่ได้ตั้งค่า GOOGLE_CLIENT_ID บนเซิร์ฟเวอร์'));
+      if (!clientId) return;
+      const render = () => {
+        if (!window.google?.accounts?.id) return window.setTimeout(render, 120);
+        google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential, auto_select: false });
+        const target = document.getElementById('googleSignInButton');
+        if (target) {
+          target.innerHTML = '';
+          google.accounts.id.renderButton(target, { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', locale: 'th', width: 320 });
+        }
+      };
+      render();
+    }
+
+    async function handleGoogleCredential(response) {
+      setText('authMessage', 'กำลังยืนยันสิทธิ์และสถานี...');
+      try {
+        const loginResponse = await fetch('/api/session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential, csrfToken: loginCsrfToken })
+        });
+        const data = await loginResponse.json();
+        if (!loginResponse.ok || !data.user) throw new Error(data.message || 'เข้าสู่ระบบไม่สำเร็จ');
+        activateSession(data.user, data.forecastPeriod);
+      } catch (error) {
+        setText('authMessage', error.message || 'เข้าสู่ระบบไม่สำเร็จ');
+      }
+    }
+
+    async function logoutUser() {
+      try { await fetch('/api/session', { method: 'DELETE', credentials: 'include' }); } catch (error) { /* Clear local UI regardless. */ }
+      currentSessionUser = null;
+      dashboardData = null;
+      allFarmsData = [];
+      try { localStorage.removeItem('smart-pineapple-mode'); } catch (error) { /* Ignore storage restrictions. */ }
+      window.google?.accounts?.id?.disableAutoSelect();
+      window.location.reload();
+    }
+
+    function activateSession(user, configuredForecastPeriod = '') {
+      document.body.classList.remove('guest-session');
+      currentSessionUser = user;
+      canOperate = user.role === 'operator' || user.role === 'admin';
+      canAdminister = user.role === 'admin';
+      setText('operationsQueueTitle', 'ภาคสนาม');
+      document.getElementById('operationsQueueTitle')?.toggleAttribute('hidden', !canOperate);
+      currentUserMode = canOperate ? savedUserMode : 'viewer';
+      setText('profileName', user.name || user.email);
+      setText('profileEmail', user.email || '');
+      setText('profileRole', user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'operator' ? 'นักวิชาการเกษตร' : 'ผู้ใช้ดูรายงาน');
+      setText('profileStation', user.station === '*' ? 'ทุกสถานี' : `สถานี${user.station}`);
+      document.getElementById('trainModelsButton')?.toggleAttribute('hidden', !canAdminister);
+      document.getElementById('logoutButton')?.removeAttribute('hidden');
+      document.getElementById('dashboardLoginButton')?.setAttribute('hidden', '');
+      document.getElementById('guestNotice')?.setAttribute('hidden', '');
+      document.getElementById('reportFarmTableWrap')?.removeAttribute('hidden');
+      document.getElementById('reportRiskFilterWrap')?.removeAttribute('hidden');
+      document.getElementById('forecastPeriodSelect')?.removeAttribute('disabled');
+      populateForecastPeriods(configuredForecastPeriod);
+      document.getElementById('authGate')?.setAttribute('hidden', '');
+      setUserMode(currentUserMode);
+      loadDashboard();
+    }
+
+    function populateForecastPeriods(configuredPeriod = '') {
+      const selects = ['forecastPeriodSelect', 'reportForecastPeriodSelect'].map(id => document.getElementById(id)).filter(Boolean);
+      if (!selects.length) return;
+      const now = new Date();
+      const startQuarter = Math.floor(now.getMonth() / 3) + 1;
+      const options = [];
+      for (let offset = 0; offset < 6; offset++) {
+        const zeroBased = (startQuarter - 1) + offset;
+        const year = now.getFullYear() + Math.floor(zeroBased / 4);
+        const quarter = (zeroBased % 4) + 1;
+        options.push(`${year}-Q${quarter}`);
+      }
+      if (/^\d{4}-Q[1-4]$/.test(configuredPeriod) && !options.includes(configuredPeriod)) options.unshift(configuredPeriod);
+      activeForecastPeriod = /^\d{4}-Q[1-4]$/.test(configuredPeriod) ? configuredPeriod : options[0];
+      selects.forEach(select => {
+        select.innerHTML = options.map(value => `<option value="${value}">${forecastPeriodLabel(value)}</option>`).join('');
+        select.value = activeForecastPeriod;
+      });
+    }
+
+    function syncForecastPeriodControls() {
+      ['forecastPeriodSelect', 'reportForecastPeriodSelect'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select && select.value !== activeForecastPeriod) select.value = activeForecastPeriod;
+      });
+    }
+
+    function forecastPeriodLabel(value) {
+      const match = String(value || '').match(/^(\d{4})-Q([1-4])$/);
+      return match ? `ไตรมาส ${match[2]} / ${Number(match[1]) + 543}` : 'ไม่ระบุช่วง';
+    }
+
+    function parseForecastDate(value) {
+      if (value instanceof Date && !isNaN(value.getTime())) return value;
+      const text = String(value || '').trim();
+      const thai = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (thai) {
+        const year = Number(thai[3]) > 2400 ? Number(thai[3]) - 543 : Number(thai[3]);
+        const date = new Date(year, Number(thai[2]) - 1, Number(thai[1]));
+        return isNaN(date.getTime()) ? null : date;
+      }
+      const parsed = new Date(text);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function getForecastFarms(farms) {
+      const match = activeForecastPeriod.match(/^(\d{4})-Q([1-4])$/);
+      if (!match) return farms || [];
+      const year = Number(match[1]);
+      const quarter = Number(match[2]);
+      return (farms || []).filter(farm => {
+        const date = parseForecastDate(farm.harvestDate);
+        return date && date.getFullYear() === year && Math.floor(date.getMonth() / 3) + 1 === quarter;
+      });
+    }
+
+    function buildForecastScope(data) {
+      const farms = getForecastFarms(data.farms || []);
+      const rowNumbers = new Set(farms.map(farm => String(farm.rowNumber)));
+      const risks = { Low: 0, Medium: 0, High: 0 };
+      const aiGrades = { Level0: 0, Level1: 0, Level2: 0, Level3: 0, Unknown: 0 };
+      let totalYield = 0;
+      let totalArea = 0;
+      let totalBrix = 0;
+      let countBrix = 0;
+      farms.forEach(farm => {
+        totalYield += Number(farm.yield || 0);
+        totalArea += Number(farm.area || farm.plantArea || 0);
+        const brix = Number(farm.brix || 0);
+        if (brix > 0) { totalBrix += brix; countBrix++; }
+        risks[normalizeClientRisk(farm.risk)]++;
+        const grade = /^Level[0-3]$/.test(farm.aiLabel || '') ? farm.aiLabel : 'Unknown';
+        aiGrades[grade]++;
+      });
+      return {
+        ...data,
+        farms,
+        totalYield,
+        totalArea,
+        totalBrix,
+        countBrix,
+        risks,
+        aiGrades,
+        monthlyYields: buildYieldSeries({}, farms),
+        urgentTasks: (data.urgentTasks || []).filter(task => rowNumbers.has(String(task.rowNumber))),
+        harvestSoon: (data.harvestSoon || []).filter(task => rowNumbers.has(String(task.rowNumber))),
+        noPhoto: (data.noPhoto || []).filter(task => rowNumbers.has(String(task.rowNumber)))
+      };
+    }
+
+    function renderScopedViews(data) {
+      renderDashboard(data);
+      renderFieldPage(data);
+      renderRiskPage(data);
+      renderGradingPage(data);
+      activeReportData = buildForecastScope(data);
+      renderReportPage(activeReportData);
+    }
+
+    function toggleUserMode() {
+      if (!currentSessionUser) return openLogin();
+      if (!canOperate) return;
+      setUserMode(currentUserMode === 'operator' ? 'viewer' : 'operator');
+    }
+
+    function setUserMode(mode, navigate = true) {
+      currentUserMode = mode === 'viewer' ? 'viewer' : 'operator';
+      if (!canOperate) currentUserMode = 'viewer';
+      const isViewer = currentUserMode === 'viewer';
+      document.getElementById('operatorNav')?.toggleAttribute('hidden', isViewer);
+      document.getElementById('reportNav')?.toggleAttribute('hidden', !isViewer);
+      document.querySelectorAll('.operator-only').forEach(element => element.toggleAttribute('hidden', isViewer));
+      const switchButton = document.getElementById('modeSwitchButton');
+      if (switchButton) {
+        switchButton.hidden = !canOperate && Boolean(currentSessionUser);
+        switchButton.setAttribute('aria-pressed', String(isViewer));
+      }
+      setText('modeSwitchLabel', isViewer ? 'กลับโหมดปฏิบัติงาน' : 'ดูรายงาน');
+      switchButton?.setAttribute('aria-label', isViewer ? 'กลับไปโหมดปฏิบัติงาน' : 'เปิดโหมดดูรายงาน');
+      setText('profileModeNote', isViewer ? 'ดูแนวโน้มและส่งออกรายงานได้' : 'สร้างงานและบันทึกผลภาคสนามได้');
+      if (canOperate) {
+        try { localStorage.setItem('smart-pineapple-mode', currentUserMode); } catch (error) { /* Mode still works for this session. */ }
+      }
+      if (navigate) {
+        if (isViewer) setReportView(activeReportView); else switchPage('dashboardPage');
+      }
+    }
+
+    function requireOperator() {
+      if (!currentSessionUser) {
+        openLogin();
+        return false;
+      }
+      if (currentUserMode !== 'viewer' && canOperate) return true;
+      setReportView('overview');
+      Swal.fire({ icon: 'info', title: 'บัญชีนี้เป็นโหมดดูรายงาน', text: 'ผู้ใช้ดูรายงานสามารถดูแนวโน้มและดาวน์โหลดข้อมูลได้ แต่ไม่สามารถแก้ไขแปลงหรือสร้างงานภาคสนาม', confirmButtonText: 'ดูรายงาน', confirmButtonColor: '#003f2a' });
+      return false;
+    }
+
+    function setReportView(view) {
+      activeReportView = ['overview', 'risk', 'forecast', 'exports'].includes(view) ? view : 'overview';
+      const viewCopy = {
+        overview: ['ภาพรวมสถานการณ์แปลง', 'ตัวเลขสำคัญ แนวโน้มผลผลิต และสัดส่วนความเสี่ยงในมุมมองเดียว'],
+        risk: ['ภาพรวมความเสี่ยง', 'เปรียบเทียบระดับความเสี่ยงเพื่อเห็นสัดส่วนที่ต้องเฝ้าระวังและติดตาม'],
+        forecast: ['พยากรณ์ผลผลิต', 'ดูปริมาณผลผลิตตามช่วงเก็บเกี่ยวสำหรับวางแผนแรงงานและตลาด'],
+        exports: ['ส่งออกรายงาน', 'ดาวน์โหลดข้อมูลสำหรับประชุมและวางแผนเมื่อเข้าสู่ระบบแล้ว']
+      }[activeReportView];
+      setText('reportPageTitle', viewCopy[0]);
+      setText('reportPageDescription', viewCopy[1]);
+      document.getElementById('reportSummaryRibbon')?.toggleAttribute('hidden', activeReportView !== 'overview');
+      document.querySelectorAll('[data-report-panel]').forEach(panel => panel.toggleAttribute('hidden', panel.dataset.reportPanel !== activeReportView));
+      document.querySelectorAll('[data-report-tab], [data-report-view]').forEach(button => {
+        const buttonView = button.dataset.reportTab || button.dataset.reportView;
+        const active = buttonView === activeReportView;
+        button.classList.toggle('active', active);
+        if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+      });
+      switchPage('reportPage');
+      if (activeReportData) requestAnimationFrame(() => renderReportCharts(activeReportData));
+    }
+
     function switchPage(pageId) {
+      if (currentUserMode === 'guest' && pageId === 'registerPage') {
+        openLogin();
+        return;
+      }
+      if (currentUserMode === 'viewer' && pageId !== 'reportPage') pageId = 'reportPage';
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-      document.getElementById(pageId).classList.add('active');
-      document.querySelectorAll('[data-page]').forEach(btn => btn.classList.toggle('active', btn.dataset.page === pageId));
+      const activePage = document.getElementById(pageId);
+      if (!activePage) return;
+      activePage.classList.add('active');
+      document.getElementById('overviewUtilities')?.toggleAttribute('hidden', pageId !== 'dashboardPage');
+      const dashboardLogin = document.getElementById('dashboardLoginButton');
+      if (dashboardLogin) dashboardLogin.toggleAttribute('hidden', Boolean(currentSessionUser) || currentUserMode !== 'guest' || pageId !== 'dashboardPage');
+      document.querySelectorAll('[data-page]').forEach(btn => {
+        const isActive = btn.dataset.page === pageId;
+        btn.classList.toggle('active', isActive);
+        if (isActive) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      requestAnimationFrame(() => {
+        const heading = activePage.querySelector('h1');
+        if (heading) {
+          heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+        } else {
+          document.getElementById('mainContent')?.focus({ preventScroll: true });
+        }
+      });
       setTimeout(() => {
         if (pageId === 'registerPage' && formMap) formMap.invalidateSize();
         if (pageId === 'dashboardPage' && dashboardMap) dashboardMap.invalidateSize();
@@ -552,29 +1267,126 @@
       }, 120);
     }
 
-    function callAppsScript(action, payload) {
-      return fetch(APPS_SCRIPT_URL, {
+    async function callAppsScript(action, payload) {
+      let response;
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 55000);
+      try {
+        response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload })
-      }).then(res => res.json());
+        body: JSON.stringify({ action, payload }),
+        signal: controller.signal
+        });
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
+        throw new Error('ไม่สามารถเชื่อมต่อระบบข้อมูลได้');
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (response.status === 401) {
+        currentSessionUser = null;
+        await initializeSession();
+        throw new Error('session หมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง');
+      }
+      if (!contentType.includes('application/json')) {
+        throw new Error(response.status >= 500 ? 'ระบบข้อมูลขัดข้องชั่วคราว' : 'ไม่พบบริการข้อมูลที่ต้องการ');
+      }
+      let data;
+      try { data = await response.json(); } catch (error) { throw new Error('ระบบได้รับข้อมูลที่ไม่สมบูรณ์'); }
+      if (!response.ok) throw new Error(data.message || 'ไม่สามารถดำเนินการได้');
+      return data;
     }
 
     function showApiError(res, fallbackMessage) {
-      const detail = res && res.detail ? `<pre class="text-left whitespace-pre-wrap text-xs mt-3 bg-gray-100 p-3 rounded">${escapeHtml(res.detail)}</pre>` : '';
-      Swal.fire({ icon: 'error', title: 'Error', html: `${(res && res.message) || fallbackMessage}${detail}`, width: 720 });
+      const message = (res && res.message) || fallbackMessage || 'เกิดข้อผิดพลาด';
+      Swal.fire({ icon: 'error', title: 'ยังดำเนินการไม่สำเร็จ', text: message, confirmButtonText: 'ลองใหม่', confirmButtonColor: '#003f2a' });
     }
 
     function loadDashboard() {
+      const preserveCurrent = Boolean(dashboardData);
+      setDashboardState('loading', '', preserveCurrent);
       return callAppsScript('getDashboardData', {}).then(res => {
-        if (!res.success) return showApiError(res, 'โหลดข้อมูลไม่สำเร็จ');
+        if (!res.success) throw new Error(res.message || 'โหลดข้อมูลไม่สำเร็จ');
         dashboardData = res.data;
         allFarmsData = res.data.farms || [];
-        renderDashboard(res.data);
-        renderFieldPage(res.data);
-        renderRiskPage(res.data);
-        renderGradingPage(res.data);
-      }).catch(err => showApiError({ message: err.toString() }, 'โหลดข้อมูลไม่สำเร็จ'));
+        lastSuccessfulSyncAt = new Date();
+        dashboardIsStale = false;
+        renderScopedViews(res.data);
+        setDashboardState('ready');
+        updateDataFreshness();
+      }).catch(err => {
+        dashboardIsStale = Boolean(dashboardData);
+        updateDataFreshness();
+        setDashboardState('error', err.message, dashboardIsStale);
+      });
+    }
+
+    function setDashboardState(state, message = '', preserveCurrent = false) {
+      const panel = document.getElementById('dashboardLoadState');
+      const workspace = document.getElementById('dashboardWorkspace');
+      const page = document.getElementById('dashboardPage');
+      if (!panel || !workspace) return;
+      page?.setAttribute('aria-busy', String(state === 'loading'));
+      if (state === 'loading') updateServiceBadge('checking', preserveCurrent ? 'กำลังซิงก์ข้อมูล' : 'กำลังเชื่อมต่อข้อมูล');
+      if (state === 'ready') updateServiceBadge('ready');
+      if (state === 'error') updateServiceBadge(preserveCurrent ? 'stale' : 'error');
+      panel.classList.remove('is-inline');
+      if (state === 'ready') {
+        panel.classList.add('hidden');
+        workspace.classList.remove('hidden');
+        return;
+      }
+      workspace.classList.toggle('hidden', !preserveCurrent);
+      panel.classList.remove('hidden');
+      if (preserveCurrent) panel.classList.add('is-inline');
+      if (state === 'error') {
+        panel.innerHTML = preserveCurrent
+          ? `<div><p class="font-bold text-[var(--pine)]">ยังซิงก์ข้อมูลใหม่ไม่ได้ — กำลังแสดงข้อมูลล่าสุดที่มี</p><p class="mt-1 text-sm">${escapeHtml(message || 'ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง')}</p><button type="button" class="btn-secondary mt-3" onclick="currentSessionUser ? loadDashboard() : loadPublicDashboard()">ลองซิงก์อีกครั้ง</button></div>`
+          : `<div><p class="panel-title text-[var(--pine)]">ยังโหลดข้อมูลแปลงไม่ได้</p><p class="mt-2">${escapeHtml(message || 'ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง')}</p><button type="button" class="btn-primary mt-5" onclick="currentSessionUser ? loadDashboard() : loadPublicDashboard()">ลองโหลดข้อมูลอีกครั้ง</button></div>`;
+        return;
+      }
+      panel.innerHTML = preserveCurrent
+        ? '<div><p class="font-bold text-[var(--pine)]">กำลังซิงก์ข้อมูลใหม่ — ข้อมูลเดิมยังใช้อ้างอิงได้</p></div>'
+        : '<div class="w-full max-w-xl"><p class="font-bold text-[var(--pine)]">กำลังจัดลำดับแปลงที่ต้องดูแล...</p><div class="mt-4 grid grid-cols-3 gap-3" aria-hidden="true"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>';
+    }
+
+    function refreshDashboard() {
+      setText('lastUpdatedAt', lastSuccessfulSyncAt ? 'กำลังซิงก์ข้อมูลใหม่...' : 'กำลังโหลดข้อมูล...');
+      return currentSessionUser ? loadDashboard() : loadPublicDashboard();
+    }
+
+    function updateDataFreshness() {
+      if (!lastSuccessfulSyncAt) {
+        setText('lastUpdatedAt', navigator.onLine ? 'ยังไม่มีข้อมูลที่ยืนยันแล้ว' : 'ออฟไลน์ · ยังไม่มีข้อมูลล่าสุด');
+        return;
+      }
+      const timestamp = lastSuccessfulSyncAt.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+      setText('lastUpdatedAt', dashboardIsStale ? `${timestamp} · ข้อมูลอาจไม่เป็นปัจจุบัน` : timestamp);
+    }
+
+    function setConnectionBadge(isOnline) {
+      if (!isOnline) updateServiceBadge('offline');
+      else if (serviceConnectionState === 'offline') updateServiceBadge('checking');
+      updateDataFreshness();
+    }
+
+    function updateServiceBadge(state, checkingLabel = '') {
+      const badge = document.getElementById('connectionBadge');
+      if (!badge) return;
+      serviceConnectionState = state;
+      const labels = {
+        ready: 'ข้อมูลพร้อม',
+        stale: 'ใช้ข้อมูลล่าสุดที่มี',
+        error: 'เชื่อมต่อบริการไม่ได้',
+        offline: 'อุปกรณ์ออฟไลน์',
+        checking: checkingLabel || 'กำลังตรวจสอบข้อมูล'
+      };
+      badge.textContent = labels[state] || labels.checking;
+      badge.className = 'connection-status';
+      badge.dataset.state = state;
     }
 
     function loadModelIntelligence() {
@@ -600,7 +1412,7 @@
       setText('modelFeatureVersion', status.featureVersion || '-');
       setText('yieldChallengerStatus', challengerStatus(yieldChallenger, yieldModel, 'cvRmse', 'CV RMSE', ' ton/rai'));
       setText('diseaseChallengerStatus', challengerStatus(diseaseChallenger, diseaseModel, 'cvMacroF1', 'CV Macro F1', '%'));
-      updateRipenessModelBadge(Boolean(aiModel));
+      updateRipenessModelBadge(aiModel ? true : 'idle');
 
       const yieldQuality = yieldModel.trained ? yieldModel : yieldChallenger;
       const diseaseQuality = diseaseModel.trained ? diseaseModel : diseaseChallenger;
@@ -647,17 +1459,18 @@
       return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
-    function updateRipenessModelBadge(ready) {
+    function updateRipenessModelBadge(state) {
       setText('ripenessModelVersion', RIPENESS_MODEL_VERSION);
       const badge = document.getElementById('ripenessModelBadge');
       if (!badge) return;
-      badge.textContent = ready ? 'RUNTIME READY' : 'MODEL UNAVAILABLE';
-      badge.className = ready
+      badge.textContent = state === true ? 'RUNTIME READY' : state === 'loading' ? 'LOADING' : state === false ? 'MODEL UNAVAILABLE' : 'LOAD ON USE';
+      badge.className = state === true
         ? 'rounded-full px-3 py-1 text-xs font-extrabold bg-[#c8f6db] text-[var(--pine)]'
         : 'rounded-full px-3 py-1 text-xs font-extrabold bg-amber-100 text-amber-800';
     }
 
     async function recordObservedOutcome() {
+      if (!requireOperator()) return;
       if (!allFarmsData.length) {
         return Swal.fire({ icon: 'info', title: 'ยังไม่มีแปลงสำหรับบันทึกผลจริง' });
       }
@@ -756,6 +1569,7 @@
     }
 
     function trainMLModels() {
+      if (!canAdminister) return showApiError({ message: 'เฉพาะผู้ดูแลระบบเท่านั้นที่ฝึกโมเดลใหม่ได้' });
       Swal.fire({ title: 'Training new challengers...', html: 'ระบบกำลังฝึกและประเมินโมเดลจากข้อมูลจริงใน Google Sheet', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
       callAppsScript('trainMLModels', {}).then(res => {
         if (!res.success) return showApiError(res, 'Train New Challenger ไม่สำเร็จ');
@@ -781,6 +1595,10 @@
 
     function renderDashboard(data) {
       const farms = data.farms || [];
+      const forecastFarms = getForecastFarms(farms);
+      const visibleFarms = activeDashboardSearch ? farms.filter(farm => matchesDashboardSearch(farm, activeDashboardSearch)) : farms;
+      const visibleForecastFarms = activeDashboardSearch ? forecastFarms.filter(farm => matchesDashboardSearch(farm, activeDashboardSearch)) : forecastFarms;
+      const forecastYield = forecastFarms.reduce((sum, farm) => sum + Number(farm.yield || 0), 0);
       const totalPlots = farms.length || 0;
       const low = data.risks?.Low || 0;
       const medium = data.risks?.Medium || 0;
@@ -788,8 +1606,13 @@
       const health = totalPlots ? Math.round((low / totalPlots) * 100) : 0;
       const mediumPct = totalPlots ? Math.round((medium / totalPlots) * 100) : 0;
       const highPct = totalPlots ? Math.round((high / totalPlots) * 100) : 0;
+      const forecastConfidenceValues = forecastFarms.map(farm => Number(farm.yieldMl?.confidence)).filter(Number.isFinite);
+      const forecastConfidence = forecastConfidenceValues.length
+        ? Math.round(forecastConfidenceValues.reduce((sum, value) => sum + value, 0) / forecastConfidenceValues.length * (Math.max(...forecastConfidenceValues) <= 1 ? 100 : 1))
+        : null;
 
-      setText('dashYieldBig', numberFormat(data.totalYield, 1));
+      setText('dashYieldBig', numberFormat(forecastYield, 1));
+      setText('forecastScopeNote', `${forecastPeriodLabel(activeForecastPeriod)} · ${forecastFarms.length} แปลง${forecastConfidence !== null ? ` · ความเชื่อมั่นเฉลี่ย ${forecastConfidence}%` : ''}`);
       setText('healthScore', health + '%');
       setText('healthyPct', health + '%');
       setText('mediumPct', mediumPct + '%');
@@ -797,11 +1620,243 @@
       setText('plotCount', totalPlots);
       setText('areaCount', numberFormat(data.totalArea, 1));
       setText('brixCount', data.countBrix ? numberFormat(data.totalBrix / data.countBrix, 1) : '0');
-      setText('quickActionTitle', high ? 'Disease Risk Inspection Required' : 'Fertilizer Plan Required');
+      setText('quickActionTitle', high ? 'มีแปลงที่ต้องตรวจเร่งด่วน' : 'ยังไม่พบแปลงเสี่ยงสูง');
+      setText('todayUrgentCount', (data.urgentTasks || []).length);
+      setText('todayRiskCount', high);
+      setText('todayHarvestCount', farms.filter(farm => Number(farm.daysToHarvest) >= 0 && Number(farm.daysToHarvest) <= 14).length);
 
-      renderDashboardMap(farms);
-      renderYieldChart(buildYieldSeries(data.monthlyYields || {}, farms));
-      renderTopHarvest(farms);
+      renderOperationalQueue(data);
+      renderDashboardMap(visibleFarms);
+      renderYieldChart(buildYieldSeries({}, forecastFarms));
+      renderTopHarvest(visibleForecastFarms);
+    }
+
+    function buildOperationalItems(data) {
+      const farms = data.farms || [];
+      const urgent = (data.urgentTasks || []).map(task => {
+        const farm = farms.find(item => String(item.rowNumber) === String(task.rowNumber)) || farms.find(item => item.name === task.farmName) || {};
+        return {
+          ...task,
+          rowNumber: task.rowNumber ?? farm.rowNumber,
+          farmName: task.farmName || farm.name || 'ไม่ระบุชื่อแปลง',
+          severity: normalizeClientRisk(task.severity || farm.risk),
+          message: task.message || getRecommendedAction(farm),
+          farm,
+          isHarvest: Number(farm.daysToHarvest) >= 0 && Number(farm.daysToHarvest) <= 14
+        };
+      });
+      const seen = new Set(urgent.map(item => String(item.rowNumber)));
+      const supporting = farms
+        .filter(farm => !seen.has(String(farm.rowNumber)))
+        .filter(farm => normalizeClientRisk(farm.risk) !== 'Low' || (Number(farm.daysToHarvest) >= 0 && Number(farm.daysToHarvest) <= 14))
+        .map(farm => ({
+          rowNumber: farm.rowNumber,
+          farmName: farm.name || 'ไม่ระบุชื่อแปลง',
+          severity: normalizeClientRisk(farm.risk),
+          message: getRecommendedAction(farm),
+          farm,
+          isHarvest: Number(farm.daysToHarvest) >= 0 && Number(farm.daysToHarvest) <= 14
+        }));
+      const rank = { High: 0, Medium: 1, Low: 2 };
+      return [...urgent, ...supporting].sort((a, b) => (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3) || Number(a.farm?.daysToHarvest ?? 999) - Number(b.farm?.daysToHarvest ?? 999));
+    }
+
+    function renderOperationalQueue(data) {
+      operationalItems = buildOperationalItems(data);
+      const selectedExists = operationalItems.some(item => String(item.rowNumber) === String(selectedDashboardFarm?.rowNumber));
+      if (!selectedExists) {
+        const nearHarvestFallback = [...(data.farms || [])]
+          .filter(farm => Number(farm.daysToHarvest) >= 0)
+          .sort((a, b) => Number(a.daysToHarvest) - Number(b.daysToHarvest))[0];
+        selectedDashboardFarm = operationalItems[0]?.farm || nearHarvestFallback || (data.farms || [])[0] || null;
+      }
+      renderOperationalQueueList();
+      updateDashboardDecision();
+    }
+
+    function renderOperationalQueueList() {
+      const container = document.getElementById('operationalQueue');
+      if (!container) return;
+      const queueSource = activeDashboardSearch
+        ? allFarmsData.filter(farm => matchesDashboardSearch(farm, activeDashboardSearch)).map(farm => operationalItems.find(item => String(item.rowNumber) === String(farm.rowNumber)) || ({
+            rowNumber: farm.rowNumber,
+            farmName: farm.name || 'ไม่ระบุชื่อแปลง',
+            severity: normalizeClientRisk(farm.risk),
+            message: getRecommendedAction(farm),
+            farm,
+            isHarvest: Number(farm.daysToHarvest) >= 0 && Number(farm.daysToHarvest) <= 14
+          }))
+        : operationalItems;
+      const filtered = queueSource.filter(item => activeQueueFilter === 'all' || (activeQueueFilter === 'harvest' ? item.isHarvest : item.severity === activeQueueFilter));
+      setText('operationsQueueCount', filtered.length ? `${filtered.length} ${activeDashboardSearch ? 'ผลลัพธ์' : 'รายการ'} · เรียงตามความสำคัญ` : activeDashboardSearch ? 'ไม่พบแปลงที่ตรงกับคำค้น' : 'ไม่พบงานในตัวกรองนี้');
+      if (!filtered.length) {
+        container.innerHTML = activeDashboardSearch
+          ? '<div class="state-panel"><div><p class="font-bold text-[var(--pine)]">ไม่พบแปลงที่ตรงกับคำค้น</p><p class="mt-2">ลองค้นด้วยชื่อแปลง พันธุ์ หรือระดับความเสี่ยงอื่น</p><button type="button" class="btn-secondary mt-4" data-clear-dashboard-search>ล้างคำค้น</button></div></div>'
+          : `<div class="state-panel"><div><p class="font-bold text-[var(--pine)]">${operationalItems.length ? 'ไม่พบงานในตัวกรองนี้' : 'วันนี้ยังไม่มีงานเร่งด่วน'}</p><p class="mt-2">${operationalItems.length ? 'เลือกตัวกรองอื่นเพื่อดูรายการงาน' : 'ติดตามแปลงตามรอบและบันทึกข้อมูลล่าสุดเพื่อให้ระบบจัดลำดับงาน'}</p>${operationalItems.length ? '<button type="button" class="btn-secondary mt-4" data-clear-queue-filter>แสดงงานทั้งหมด</button>' : '<button type="button" class="btn-primary operator-write mt-4" data-open-register>บันทึกข้อมูลแปลง</button>'}</div></div>`;
+        container.querySelector('[data-clear-queue-filter]')?.addEventListener('click', () => setQueueFilter('all'));
+        container.querySelector('[data-clear-dashboard-search]')?.addEventListener('click', clearDashboardSearch);
+        container.querySelector('[data-open-register]')?.addEventListener('click', () => switchPage('registerPage'));
+        return;
+      }
+      container.innerHTML = filtered.map((item, index) => {
+        const farm = item.farm || {};
+        const selected = selectedDashboardFarm && String(selectedDashboardFarm.rowNumber) === String(item.rowNumber);
+        const deadline = item.severity === 'High' ? 'วันนี้' : item.isHarvest ? `${Math.max(0, Number(farm.daysToHarvest || 0))} วัน` : 'รอบถัดไป';
+        return `<div role="listitem"><button type="button" class="queue-item" data-dashboard-row="${escapeHtml(item.rowNumber)}" aria-current="${selected}">
+          <span class="queue-rank">${index + 1}</span>
+          <span><span class="queue-title">${escapeHtml(item.farmName)}</span><span class="queue-meta block">${escapeHtml(farm.variety || 'ไม่ระบุพันธุ์')} · ${numberFormat(farm.area || farm.plantArea || 0, 1)} ไร่</span><span class="severity-chip ${item.severity.toLowerCase()}">${riskLabel(item.severity)}</span></span>
+          <span class="queue-reason">${escapeHtml(item.message)}</span>
+          <span class="queue-deadline">กำหนด<strong>${escapeHtml(deadline)}</strong></span>
+        </button></div>`;
+      }).join('');
+      container.querySelectorAll('[data-dashboard-row]').forEach(button => button.addEventListener('click', () => selectDashboardFarm(button.dataset.dashboardRow)));
+    }
+
+    function setQueueFilter(filter) {
+      activeQueueFilter = filter || 'all';
+      document.querySelectorAll('[data-queue-filter]').forEach(button => button.classList.toggle('active', button.dataset.queueFilter === activeQueueFilter));
+      renderOperationalQueueList();
+    }
+
+    function selectDashboardFarm(rowNumber) {
+      selectedDashboardFarm = allFarmsData.find(farm => String(farm.rowNumber) === String(rowNumber)) || null;
+      renderOperationalQueueList();
+      updateDashboardDecision();
+      const marker = dashboardMap?.farmMarkers?.get(String(rowNumber));
+      if (marker) {
+        marker.openPopup();
+        dashboardMap.panTo(marker.getLatLng(), { animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+      }
+    }
+
+    function updateDashboardDecision() {
+      const farm = selectedDashboardFarm;
+      const item = operationalItems.find(entry => farm && String(entry.rowNumber) === String(farm.rowNumber));
+      const severity = normalizeClientRisk(item?.severity || farm?.risk);
+      const isActionable = Boolean(item);
+      const actionVerb = canOperate ? 'ดูแล' : 'ติดตาม';
+      const deadline = severity === 'High'
+        ? 'กำหนดตรวจวันนี้'
+        : Number(farm?.daysToHarvest) >= 0
+          ? `เก็บเกี่ยวใน ${Number(farm.daysToHarvest)} วัน`
+          : 'ติดตามรอบถัดไป';
+      setText('decisionHeadingLabel', isActionable ? `แปลงที่ควร${actionVerb}เป็นอันดับแรก` : `วันนี้ยังไม่มีแปลงเร่งด่วน · แปลงที่ควร${actionVerb}ถัดไป`);
+      setText('selectedActionRisk', farm ? `ความเสี่ยง${riskLabel(severity)}` : 'ยังไม่มีข้อมูล');
+      setText('selectedActionFarm', farm?.name || 'ยังไม่มีแปลงที่แนะนำ');
+      setText('selectedActionReason', farm ? getDecisionEvidenceSummary(farm) : 'เมื่อข้อมูลพร้อม ระบบจะแนะนำแปลงจากความเสี่ยง สภาพแปลง และกำหนดเก็บเกี่ยว');
+      setText('selectedActionNext', farm ? `งานถัดไป: ${getRecommendedAction(farm)}` : 'งานถัดไป: รอข้อมูลที่ยืนยันแล้ว');
+      setText('selectedActionEvidence', formatEvidenceAge(farm?.weatherFeatures?.retrievedAt, 'หลักฐานแปลง'));
+      setText('selectedActionSync', formatEvidenceAge(lastSuccessfulSyncAt, 'ซิงก์ระบบ'));
+      setText('selectedActionDeadline', deadline);
+      const button = document.getElementById('openSelectedFieldButton');
+      if (button) {
+        button.disabled = !farm;
+        button.textContent = canOperate ? 'เปิดแปลงและบันทึกผลตรวจ' : 'ดูรายละเอียดแปลง';
+        button.setAttribute('aria-label', farm ? `${button.textContent} ${farm.name || ''}` : 'ยังไม่มีแปลงที่แนะนำ');
+      }
+    }
+
+    function formatEvidenceAge(value, label = 'หลักฐานแปลง') {
+      const date = value instanceof Date ? value : parseForecastDate(value);
+      if (!date || isNaN(date.getTime())) return `${label}: ไม่พบเวลาที่บันทึก`;
+      const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+      if (minutes < 60) return `${label}: ${Math.max(1, minutes)} นาทีที่แล้ว`;
+      if (minutes < 1440) return `${label}: ${Math.round(minutes / 60)} ชั่วโมงที่แล้ว`;
+      return `${label}: ${date.toLocaleDateString('th-TH', { dateStyle: 'medium' })}`;
+    }
+
+    function openSelectedDashboardField() {
+      if (!selectedDashboardFarm) return;
+      selectedFieldFarm = selectedDashboardFarm;
+      switchPage('fieldPage');
+      renderFieldPage({ farms: allFarmsData });
+    }
+
+    function renderReportPage(data) {
+      const farms = data.farms || [];
+      const plotCount = data.publicPlotCount ?? farms.length;
+      setText('reportPlotCount', plotCount);
+      setText('reportAreaCount', numberFormat(data.totalArea, 1));
+      setText('reportHighRiskCount', data.risks?.High || 0);
+      setText('reportYieldCount', numberFormat(data.totalYield, 1));
+      setText('reportForecastNote', plotCount ? `${plotCount} แปลงใน${forecastPeriodLabel(activeForecastPeriod)}` : `ยังไม่มีแปลงใน${forecastPeriodLabel(activeForecastPeriod)}`);
+      renderReportTable(farms);
+      if (document.getElementById('reportPage')?.classList.contains('active')) requestAnimationFrame(() => renderReportCharts(data));
+    }
+
+    function renderReportCharts(data) {
+      if (!window.Chart || !data) return;
+      const series = buildYieldSeries(data.monthlyYields || {}, data.farms || []);
+      const labels = Object.keys(series);
+      const values = Object.values(series);
+      if (activeReportView === 'overview') {
+        destroyChart('reportYieldChart');
+        destroyChart('reportRiskChart');
+        const yieldCanvas = document.getElementById('reportYieldChart');
+        const riskCanvas = document.getElementById('reportRiskChart');
+        if (yieldCanvas) charts.reportYieldChart = new Chart(yieldCanvas, reportYieldChartConfig(labels, values));
+        if (riskCanvas) charts.reportRiskChart = new Chart(riskCanvas, reportRiskChartConfig(data.risks));
+      }
+      if (activeReportView === 'risk') {
+        destroyChart('reportRiskDetailChart');
+        const riskDetailCanvas = document.getElementById('reportRiskDetailChart');
+        if (riskDetailCanvas) charts.reportRiskDetailChart = new Chart(riskDetailCanvas, reportRiskChartConfig(data.risks));
+      }
+      if (activeReportView === 'forecast') {
+        destroyChart('reportForecastChart');
+        const forecastCanvas = document.getElementById('reportForecastChart');
+        if (forecastCanvas) charts.reportForecastChart = new Chart(forecastCanvas, reportYieldChartConfig(labels, values));
+      }
+    }
+
+    function reportRiskChartConfig(risks = {}) {
+      return {
+        type: 'doughnut',
+        data: { labels: ['ปกติ', 'เฝ้าระวัง', 'เสี่ยงสูง'], datasets: [{ data: [risks.Low || 0, risks.Medium || 0, risks.High || 0], backgroundColor: ['#003f2a', '#6b5e00', '#cf1f1f'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 18 } } } }
+      };
+    }
+
+    function reportYieldChartConfig(labels, values) {
+      return {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'ผลผลิตคาดการณ์ (ตัน)', data: values, backgroundColor: labels.map((_, index) => index === 0 ? '#ffd319' : '#003f2a'), borderRadius: 6, maxBarThickness: 52 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `${numberFormat(context.raw, 1)} ตัน` } } }, scales: { y: { beginAtZero: true, grid: { color: '#edf2eb' } }, x: { grid: { display: false } } } }
+      };
+    }
+
+    function renderReportTable(sourceFarms = activeReportData?.farms || []) {
+      const table = document.getElementById('reportFarmTable');
+      if (!table) return;
+      const filter = document.getElementById('reportRiskFilter')?.value || 'all';
+      const farms = [...sourceFarms]
+        .filter(farm => filter === 'all' || normalizeClientRisk(farm.risk) === filter)
+        .sort((a, b) => ({ High: 0, Medium: 1, Low: 2 }[normalizeClientRisk(a.risk)] ?? 3) - ({ High: 0, Medium: 1, Low: 2 }[normalizeClientRisk(b.risk)] ?? 3));
+      table.innerHTML = farms.length ? farms.map(farm => {
+        const risk = normalizeClientRisk(farm.risk);
+        return `<tr><td class="font-bold">${escapeHtml(farm.name || 'ไม่ระบุชื่อ')}</td><td>${escapeHtml(farm.variety || '-')}</td><td><span class="severity-chip ${risk.toLowerCase()}">${riskLabel(risk)}</span></td><td>${escapeHtml(farm.harvestDate || '-')}</td><td>${numberFormat(farm.yield, 1)} ตัน</td><td>${escapeHtml(farm.updatedAt || farm.lastUpdated || '-')}</td></tr>`;
+      }).join('') : '<tr><td colspan="6"><div class="state-panel"><div><p class="font-bold text-[var(--pine)]">ไม่พบแปลงในตัวกรองนี้</p><p class="mt-2">เลือกความเสี่ยงระดับอื่นเพื่อดูข้อมูล</p></div></div></td></tr>';
+    }
+
+    function exportFarmReportCsv() {
+      if (!currentSessionUser) return openLogin();
+      const farms = activeReportData?.farms || [];
+      const rows = [['ชื่อแปลง', 'พันธุ์', 'พื้นที่ไร่', 'ความเสี่ยง', 'วันเก็บเกี่ยว', 'ผลผลิตคาดการณ์ตัน', 'Brix'], ...farms.map(farm => [farm.name, farm.variety, farm.area || farm.plantArea, riskLabel(farm.risk), farm.harvestDate, farm.yield, farm.brix])];
+      downloadCsv('pineapple-field-report.csv', rows);
+      setText('reportExportStatus', `ดาวน์โหลดรายงาน ${farms.length} แปลงแล้ว`);
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = '\ufeff' + rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     function initDashboardMap() {
@@ -829,6 +1884,7 @@
 
       if (map.farmLayer) map.removeLayer(map.farmLayer);
       map.farmLayer = L.layerGroup().addTo(map);
+      map.farmMarkers = new Map();
 
       const points = farms
         .map(farm => {
@@ -838,7 +1894,7 @@
         .filter(Boolean);
 
       points.forEach(farm => {
-        const color = farm.risk === 'High' ? '#cf1f1f' : farm.risk === 'Medium' ? '#867600' : '#003f2a';
+        const color = farm.risk === 'High' ? '#cf1f1f' : farm.risk === 'Medium' ? '#6b5e00' : '#003f2a';
         const marker = L.circleMarker([farm.lat, farm.lng], {
           radius: 10,
           color: '#ffffff',
@@ -851,7 +1907,8 @@
           Risk: ${escapeHtml(farm.risk || '-')}<br>
           Yield: ${numberFormat(farm.yield, 1)} MT
         `);
-        marker.on('click', () => { selectedFieldFarm = farm; switchPage('fieldPage'); renderFieldPage({ farms: allFarmsData }); });
+        map.farmMarkers.set(String(farm.rowNumber), marker);
+        marker.on('click', () => selectDashboardFarm(farm.rowNumber));
       });
 
       const status = document.getElementById('dashboardMapStatus');
@@ -907,16 +1964,8 @@
 
     function getHarvestMonthLabel(value) {
       if (!value) return '';
-      if (value instanceof Date && !isNaN(value.getTime())) {
-        return value.toLocaleString('en-US', { month: 'short' });
-      }
-      const text = String(value);
-      const parts = text.split('/');
-      if (parts.length === 3) {
-        const parsed = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-        if (!isNaN(parsed.getTime())) return parsed.toLocaleString('en-US', { month: 'short' });
-      }
-      return text.slice(0, 8);
+      const parsed = parseForecastDate(value);
+      return parsed ? parsed.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) : String(value).slice(0, 8);
     }
 
     function renderYieldChart(monthly) {
@@ -931,7 +1980,7 @@
           labels,
           datasets: [{
             data: values,
-            backgroundColor: labels.map((_, i) => i > labels.length - 3 ? '#867600' : '#003f2a'),
+            backgroundColor: labels.map((_, i) => i > labels.length - 3 ? '#6b5e00' : '#003f2a'),
             borderRadius: 8,
             barPercentage: 0.72,
             categoryPercentage: 0.72
@@ -962,22 +2011,21 @@
         const barColor = farm.risk === 'High' ? 'bg-red-600' : farm.risk === 'Medium' ? 'bg-[var(--olive)]' : 'bg-[var(--pine)]';
         return `
         <button onclick="focusFarm(${farm.rowNumber})" class="w-full text-left grid grid-cols-[56px_1fr_auto] items-center gap-4 rounded-xl p-2 hover:bg-[#f2f7f0] transition">
-          <img src="${safeImage(farm.photo)}" class="w-14 h-14 object-cover rounded-lg bg-gray-100" onerror="this.src='https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=200&q=80'">
+          <img src="${safeImage(farm.photo)}" alt="ภาพแปลง ${escapeHtml(farm.name || '')}" width="56" height="56" loading="lazy" decoding="async" class="w-14 h-14 object-cover rounded-lg bg-gray-100" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=200&q=80'">
           <div class="min-w-0">
             <p class="font-extrabold">${escapeHtml(farm.name)}</p>
-            <p class="text-sm text-gray-500">Peak Harvest: ${escapeHtml(farm.harvestDate || '-')}</p>
+            <p class="text-sm text-gray-500">วันเก็บเกี่ยว: ${escapeHtml(farm.harvestDate || '-')}</p>
             <div class="h-2 bg-[#e5ece2] rounded-full mt-2 overflow-hidden"><div class="${barColor} h-full rounded-full" style="width: ${width}%"></div></div>
           </div>
           <div class="font-extrabold whitespace-nowrap">${numberFormat(farm.yield, 1)} MT</div>
         </button>
-      `}).join('') : '<p class="text-gray-500">ยังไม่มีข้อมูลแปลง</p>';
+      `}).join('') : '<div class="empty-state lg:col-span-2"><p class="font-extrabold text-[var(--pine)]">ยังไม่มีข้อมูลแปลง</p><p class="text-sm mt-2">ยังไม่มีข้อมูลแปลงในขอบเขตนี้</p><button type="button" onclick="switchPage(\'registerPage\')" class="btn-primary operator-write mt-4">เพิ่มแปลงแรก</button></div>';
     }
 
     function renderFieldPage(data) {
       const farms = data.farms || allFarmsData || [];
-      const farm = farms.find(item => selectedFieldFarm && String(item.rowNumber) === String(selectedFieldFarm.rowNumber)) || farms[0];
+      const farm = farms.find(item => selectedFieldFarm && String(item.rowNumber) === String(selectedFieldFarm.rowNumber)) || null;
       selectedFieldFarm = farm || null;
-
       renderFieldMap(farms, farm);
       renderFieldImageOverlay(farms, farm);
       renderFieldDetails(farm);
@@ -1054,12 +2102,14 @@
         const risk = normalizeClientRisk(item.risk || item.riskText);
         const color = getRiskColor(risk);
         hotspot.className = 'field-hotspot';
+        hotspot.type = 'button';
         hotspot.style.left = `${28 + ((index * 23) % 46)}%`;
         hotspot.style.top = `${32 + ((index * 17) % 42)}%`;
         hotspot.style.background = color;
         hotspot.style.color = color;
         hotspot.innerHTML = risk === 'High' ? '!' : risk === 'Medium' ? '?' : '✓';
         hotspot.title = `${item.name || 'Farm'}: ${getRecommendedAction(item)}`;
+        hotspot.setAttribute('aria-label', hotspot.title);
         hotspot.onclick = () => {
           selectedFieldFarm = item;
           renderFieldPage({ farms: allFarmsData });
@@ -1076,6 +2126,7 @@
         setText('fieldBrix', '-');
         setText('fieldGrade', '-');
         setText('fieldAction', 'เพิ่มข้อมูลแปลงพร้อมพิกัดเพื่อเริ่มติดตาม');
+        setText('fieldTempAvg', '-'); setText('fieldHumidityAvg', '-'); setText('fieldRain72h', '-');
         setText('cultivarInsight', 'เลือกหรือเพิ่มข้อมูลแปลงเพื่อดูคำแนะนำพันธุ์และคุณภาพ');
         document.getElementById('cultivarActions').innerHTML = '';
         return;
@@ -1084,10 +2135,13 @@
       const advice = buildCultivarAdvice(farm);
       setText('selectedFarmName', `${farm.name || 'ไม่ระบุชื่อแปลง'} • ${farm.variety || 'ไม่ระบุพันธุ์'} • ${farm.risk || '-'}`);
       setText('fieldHarvestDate', farm.harvestDate || '-');
-      setText('fieldHarvestDays', farm.daysToHarvest !== null && farm.daysToHarvest !== undefined ? `${farm.daysToHarvest} Days Remaining` : '-');
+      setText('fieldHarvestDays', farm.daysToHarvest !== null && farm.daysToHarvest !== undefined ? `เหลือ ${farm.daysToHarvest} วัน` : '-');
       setText('fieldBrix', farm.brix ? `${farm.brix} °Bx` : '-');
       setText('fieldGrade', shortGrade(farm.grade));
       setText('fieldAction', advice.action);
+      setText('fieldTempAvg', farm.weatherFeatures?.tempAvgC ? `${numberFormat(farm.weatherFeatures.tempAvgC, 1)}°C` : '-');
+      setText('fieldHumidityAvg', farm.weatherFeatures?.humidityAvg ? `${numberFormat(farm.weatherFeatures.humidityAvg, 0)}%` : '-');
+      setText('fieldRain72h', farm.weatherFeatures?.rain72hMm ? `${numberFormat(farm.weatherFeatures.rain72hMm, 1)} มม.` : '-');
       setText('cultivarInsight', advice.summary);
       document.getElementById('cultivarActions').innerHTML = advice.tags.map(tag => `<span class="field-chip">${escapeHtml(tag)}</span>`).join('');
     }
@@ -1111,7 +2165,7 @@
     function getRiskColor(value) {
       const risk = normalizeClientRisk(value);
       if (risk === 'High') return '#cf1f1f';
-      if (risk === 'Medium') return '#867600';
+      if (risk === 'Medium') return '#6b5e00';
       return '#003f2a';
     }
 
@@ -1127,6 +2181,20 @@
       if (brix > 0 && brix < 13) return 'ติดตามความหวานก่อนเก็บเกี่ยว และทบทวนแผนปุ๋ยโพแทสเซียม';
       if (risk === 'Medium') return 'เฝ้าระวังความชื้นและตรวจซ้ำใน 3-5 วัน';
       return 'ติดตามตามรอบปกติ และบันทึกภาพล่าสุดเพื่อใช้เทียบแนวโน้ม';
+    }
+
+    function getDecisionEvidenceSummary(farm) {
+      const signals = [];
+      const risk = normalizeClientRisk(farm.risk || farm.riskText);
+      const humidity = Number(farm.weatherFeatures?.humidityAvg || 0);
+      const days = Number(farm.daysToHarvest);
+      const drainage = String(farm.soilDrainage || '').toLowerCase();
+      if (risk === 'High') signals.push('ระบบจัดระดับความเสี่ยงสูง');
+      else if (risk === 'Medium') signals.push('ระบบจัดระดับเฝ้าระวัง');
+      if (humidity >= 85) signals.push(`ความชื้นเฉลี่ย ${numberFormat(humidity, 0)}% สูงกว่าเกณฑ์ 85%`);
+      if (drainage.includes('poor') || drainage.includes('แย่')) signals.push('มีข้อมูลการระบายน้ำไม่ดี');
+      if (Number.isFinite(days) && days >= 0 && days <= 14) signals.push(`เหลือ ${days} วันก่อนเก็บเกี่ยว`);
+      return signals.slice(0, 3).join(' · ') || 'ยังไม่พบสัญญาณเร่งด่วน จัดลำดับไว้สำหรับการติดตามตามรอบ';
     }
 
     function buildCultivarAdvice(farm) {
@@ -1159,19 +2227,28 @@
 
     function renderRiskPage(data) {
       renderRiskMap();
-      renderWeatherBars();
+      renderWeatherBars(data.farms || []);
       const urgent = data.urgentTasks || [];
       setText('nextBestAction', urgent[0] ? `${urgent[0].farmName}: ${urgent[0].message}` : 'ยังไม่มีแปลงเสี่ยงสูง ให้ติดตามความชื้นและการระบายน้ำต่อเนื่อง');
+      renderAlertTable(urgent);
+      const generateButton = document.getElementById('generateTaskButton');
+      if (generateButton) generateButton.disabled = !urgent.length;
+      const exportButton = document.getElementById('exportAlertsButton');
+      if (exportButton) exportButton.disabled = !urgent.length;
+    }
+
+    function renderAlertTable(tasks) {
       const table = document.getElementById('alertTable');
-      table.innerHTML = urgent.length ? urgent.map(task => `
+      const filtered = activeRiskFilter === 'all' ? tasks : tasks.filter(task => String(task.severity || '').toLowerCase() === activeRiskFilter.toLowerCase());
+      table.innerHTML = filtered.length ? filtered.map(task => `
         <tr class="border-t border-gray-100">
           <td class="py-4 font-bold">${escapeHtml(task.farmName)}</td>
-          <td><span class="bg-red-100 text-red-700 rounded-full px-3 py-1 font-bold text-xs">${task.severity}</span></td>
+          <td><span class="bg-red-100 text-red-700 rounded-full px-3 py-1 font-bold text-xs">${riskLabel(task.severity)}</span></td>
           <td>ภายใน 48 ชม.</td>
           <td class="font-bold">${escapeHtml(task.message)}</td>
-          <td><button onclick="focusFarm(${task.rowNumber})" class="text-xl">›</button></td>
+          <td><button type="button" onclick="focusFarm(${task.rowNumber})" class="table-action text-xl" aria-label="ดูแปลง ${escapeHtml(task.farmName)}">›</button></td>
         </tr>
-      `).join('') : '<tr><td class="py-6 text-gray-500" colspan="5">ยังไม่มี alerts</td></tr>';
+      `).join('') : '<tr><td class="py-10" colspan="5"><div class="empty-state"><p class="font-extrabold text-[var(--pine)]">ไม่พบรายการในตัวกรองนี้</p><p class="text-sm mt-2">ลองเลือกระดับความเสี่ยงอื่น</p></div></td></tr>';
     }
 
     function renderRiskMap() {
@@ -1185,17 +2262,22 @@
       allFarmsData.forEach(farm => {
         const latlng = getFarmLatLng(farm);
         if (!latlng) return;
-        const color = farm.risk === 'High' ? '#cf1f1f' : farm.risk === 'Medium' ? '#867600' : '#003f2a';
+        const color = farm.risk === 'High' ? '#cf1f1f' : farm.risk === 'Medium' ? '#6b5e00' : '#003f2a';
         L.circle([latlng.lat, latlng.lng], { radius: farm.risk === 'High' ? 9000 : 5000, color, fillColor: color, fillOpacity: .18, weight: 1 }).addTo(riskMap);
         L.circleMarker([latlng.lat, latlng.lng], { radius: 7, color: '#fff', fillColor: color, fillOpacity: 1, weight: 2 }).addTo(riskMap);
       });
     }
 
-    function renderWeatherBars() {
+    function renderWeatherBars(farms) {
+      const humidityValues = (farms || []).map(farm => Number(farm.weatherFeatures?.humidityAvg || 0)).filter(value => value > 0);
+      const humidity = humidityValues.length ? Math.round(average(humidityValues)) : 0;
+      setText('weatherHumidityValue', humidity ? `${humidity}% ความชื้น` : '-');
+      setText('weatherHumidityText', humidity ? (humidity >= 85 ? 'ความชื้นสูง ควรตรวจการระบายน้ำและโรคเชื้อรา' : 'อยู่ในระดับที่ควรติดตามต่อเนื่อง') : 'ยังไม่มีข้อมูลความชื้นล่าสุด');
       destroyChart('weatherBars');
+      if (!window.Chart) return;
       charts.weatherBars = new Chart(document.getElementById('weatherBars'), {
         type: 'bar',
-        data: { labels: ['D1','D2','D3','D4','D5','D6','D7'], datasets: [{ data: [30, 44, 61, 84, 78, 58, 45], backgroundColor: ['#315f4f','#315f4f','#315f4f','#ffd319','#ffd319','#315f4f','#315f4f'], borderRadius: 3 }] },
+        data: { labels: humidityValues.slice(0, 7).map((_, index) => `แปลง ${index + 1}`), datasets: [{ data: humidityValues.slice(0, 7), backgroundColor: humidityValues.slice(0, 7).map(value => value >= 85 ? '#ffd319' : '#80b09e'), borderRadius: 3 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
       });
     }
@@ -1214,18 +2296,23 @@
       const qualityPct = total ? Math.round((highQuality / total) * 100) : 0;
       const avgConfidence = average(farms.map(f => Number(f.aiConfidence || 0)).filter(Boolean));
       const avgWeight = average(farms.map(f => Number(f.weight || 0)).filter(Boolean));
-      setText('aiAccuracy', avgConfidence ? Math.round(avgConfidence * 100) + '%' : '0%');
+      setText('aiAccuracy', farms.length && avgConfidence ? Math.round(avgConfidence * 100) + '%' : '-');
       setText('ripenessOutcomeSamples', farms.filter(farm => farm.actualRipenessLevel).length);
-      setText('forecastArea', numberFormat(data.totalArea, 0));
-      setText('qualityPct', qualityPct + '%');
-      setText('qualityBrix', data.countBrix ? numberFormat(data.totalBrix / data.countBrix, 1) : '0');
-      setText('qualityWeight', avgWeight ? numberFormat(avgWeight, 1) + 'กก.' : '0');
-      setText('qualityRisk', farms.length ? Math.round(((data.risks.High || 0) / farms.length) * 100) + '%' : '0%');
+      setText('forecastArea', farms.length ? numberFormat(data.totalArea, 0) : '-');
+      setText('qualityPct', farms.length ? qualityPct + '%' : '-');
+      setText('qualityBrix', data.countBrix ? numberFormat(data.totalBrix / data.countBrix, 1) : '-');
+      setText('qualityWeight', avgWeight ? numberFormat(avgWeight, 1) + 'กก.' : '-');
+      setText('qualityRisk', farms.length ? Math.round(((data.risks.High || 0) / farms.length) * 100) + '%' : '-');
       renderGradeYieldChart(gradeTotals);
       renderSampleCards(farms);
       setText('marketPlanText', gradeTotals.A >= gradeTotals.C ? 'สัดส่วน Grade A/B อยู่ในระดับดี แนะนำล็อกแผนขายล่วงหน้าและคัดแยกล็อตส่งออก' : 'พบ Grade C สูง ควรวางแผนส่งโรงงานแปรรูปและตรวจสาเหตุคุณภาพ');
-      setText('productionRiskLevel', (data.risks.High || 0) ? 'High' : 'Low');
+      setText('productionRiskLevel', (data.risks.High || 0) ? 'สูง' : 'ต่ำ');
       setText('productionRiskText', (data.risks.High || 0) ? 'พบแปลงเสี่ยงสูง ควรตรวจความชื้นและโรครากเน่า/ยอดเน่าใน 48 ชั่วโมง' : 'ระบบยังไม่พบสัญญาณความเสี่ยงรุนแรงจากข้อมูลล่าสุด');
+      const riskTags = [];
+      if (farms.some(farm => Number(farm.weatherFeatures?.humidityAvg || 0) >= 85)) riskTags.push('ความชื้นสูง');
+      if (farms.some(farm => normalizeClientRisk(farm.risk) === 'High')) riskTags.push('มีแปลงเสี่ยงสูง');
+      if (!riskTags.length) riskTags.push(farms.length ? 'ยังไม่พบความเสี่ยงสำคัญ' : 'รอข้อมูลแปลง');
+      document.getElementById('productionRiskTags').innerHTML = riskTags.map(tag => `<span class="field-chip">${escapeHtml(tag)}</span>`).join('');
       loadModelIntelligence();
     }
 
@@ -1233,7 +2320,7 @@
       destroyChart('gradeYieldChart');
       charts.gradeYieldChart = new Chart(document.getElementById('gradeYieldChart'), {
         type: 'bar',
-        data: { labels: ['Grade A (Export)', 'Grade B (Factory)', 'Grade C (Local)'], datasets: [{ data: [totals.A, totals.B, totals.C], backgroundColor: ['#003f2a', '#867600', '#dfe5df'], borderRadius: 8 }] },
+        data: { labels: ['Grade A (Export)', 'Grade B (Factory)', 'Grade C (Local)'], datasets: [{ data: [totals.A, totals.B, totals.C], backgroundColor: ['#003f2a', '#6b5e00', '#dfe5df'], borderRadius: 8 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
       });
     }
@@ -1241,28 +2328,68 @@
     function renderSampleCards(farms) {
       const samples = farms.filter(f => f.photo).slice(0, 3);
       const container = document.getElementById('sampleCards');
-      container.innerHTML = samples.length ? samples.map((farm, index) => `
-        <div class="bg-white rounded-xl p-5 border border-gray-100">
+      container.innerHTML = samples.length ? samples.map(farm => `
+        <article class="sample-analysis">
           <div class="relative">
-            <img class="sample-img" src="${safeImage(farm.photo)}" onerror="this.src=''; this.style.display='none'">
+            <img class="sample-img" src="${safeImage(farm.photo)}" alt="ตัวอย่างผลผลิตจาก ${escapeHtml(farm.name || '')}" width="420" height="155" loading="lazy" decoding="async" onerror="this.remove()">
             <span class="absolute right-3 top-3 bg-[var(--gold)] rounded px-2 py-1 text-xs font-extrabold">${shortGrade(farm.grade)}</span>
           </div>
-          <h4 class="text-xl font-extrabold mt-4">Sample ID: #${88219 + index}</h4>
-          <p class="text-gray-600">${escapeHtml(farm.name)} | ${escapeHtml(farm.variety || '-')}</p>
+          <h4 class="text-xl font-extrabold mt-4">${escapeHtml(farm.name || 'ไม่ระบุชื่อแปลง')}</h4>
+          <p class="text-gray-600">${escapeHtml(farm.variety || 'ไม่ระบุพันธุ์')}</p>
           <div class="grid grid-cols-3 gap-3 mt-5 pt-4 border-t text-xs font-bold">
-            <div><p class="text-gray-500">CONF.</p><p>${farm.aiConfidence ? Math.round(farm.aiConfidence * 100) + '%' : '-'}</p></div>
+            <div><p class="text-gray-500">ความมั่นใจ</p><p>${farm.aiConfidence ? Math.round(farm.aiConfidence * 100) + '%' : '-'}</p></div>
             <div><p class="text-gray-500">BRIX</p><p>${farm.brix || '-'}</p></div>
-            <div><p class="text-gray-500">SHAPE</p><p>UNIFORM</p></div>
+            <div><p class="text-gray-500">น้ำหนัก</p><p>${farm.weight ? `${numberFormat(farm.weight, 1)} กก.` : '-'}</p></div>
           </div>
-        </div>
+        </article>
       `).join('') : '<p class="text-gray-500">ยังไม่มีรูปตัวอย่างสำหรับวิเคราะห์</p>';
     }
 
     function initFormMap() {
+      if (formMap || !window.L) return formMap;
       formMap = L.map('formMap').setView([11.8124, 99.7975], 9);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(formMap);
       formMap.on('click', e => setFormLocation(e.latlng.lat, e.latlng.lng));
       setTimeout(() => formMap.invalidateSize(), 200);
+      return formMap;
+    }
+
+    function loadScriptOnce(src, globalName) {
+      if (globalName && window[globalName]) return Promise.resolve();
+      const existing = document.querySelector(`script[data-runtime-src="${src}"]`);
+      if (existing) return new Promise((resolve, reject) => {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+      });
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.dataset.runtimeSrc = src;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Unable to load ${src}`));
+        document.head.appendChild(script);
+      });
+    }
+
+    function ensureAiModel() {
+      if (aiModel) return Promise.resolve(aiModel);
+      if (aiModelPromise) return aiModelPromise;
+      updateRipenessModelBadge('loading');
+      aiModelPromise = loadScriptOnce('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js', 'tf')
+        .then(() => loadScriptOnce('https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js', 'tmImage'))
+        .then(() => tmImage.load(TM_URL + 'model.json', TM_URL + 'metadata.json'))
+        .then(model => {
+          aiModel = model;
+          updateRipenessModelBadge(true);
+          return model;
+        })
+        .catch(error => {
+          aiModelPromise = null;
+          updateRipenessModelBadge(false);
+          throw error;
+        });
+      return aiModelPromise;
     }
 
     function setFormLocation(lat, lng) {
@@ -1323,8 +2450,15 @@
             return;
           }
 
-          if (aiModel) {
-            const predictions = await aiModel.predict(canvas);
+          let model = null;
+          try {
+            model = await ensureAiModel();
+          } catch (error) {
+            model = null;
+          }
+
+          if (model) {
+            const predictions = await model.predict(canvas);
             const ranked = predictions.slice().sort((a, b) => b.probability - a.probability);
             const best = ranked[0];
             const second = ranked[1] || { probability: 0 };
@@ -1414,16 +2548,10 @@
 
     function submitForm(event) {
       event.preventDefault();
+      if (!requireOperator()) return;
       const form = event.target;
-      const missing = [];
-      if (!form.farmName.value.trim()) missing.push('ชื่อแปลง / เกษตรกร');
-      if (!form.plantArea.value || Number(form.plantArea.value) <= 0) missing.push('พื้นที่ปลูก');
-      if (!form.plantingDate.value) missing.push('วันที่เริ่มปลูก');
-      if (!form.forcingDate.value) missing.push('วันที่บังคับดอก');
-      if (!form.soilDrainage.value) missing.push('สภาพการระบายน้ำ');
-      if (!form.latitude.value || !form.longitude.value) missing.push('พิกัดแปลงปลูก');
-      if (missing.length) {
-        return Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบ', html: `<div class="text-left">${missing.map(item => `• ${item}`).join('<br>')}</div>` });
+      for (let step = 1; step <= 3; step += 1) {
+        if (!validateFormStep(step)) { showFormStep(step); return Swal.fire({ icon: 'warning', title: 'ยังมีข้อมูลที่ต้องตรวจสอบ', text: 'กรุณาแก้ไขช่องที่แสดงด้วยสีแดง', confirmButtonColor: '#003f2a' }); }
       }
 
       const formData = {
@@ -1488,19 +2616,172 @@
         setStatus('statusLocation', 'พิกัด: ยังไม่พร้อม', 'gray');
         setStatus('statusImage', 'รูปภาพ: ยังไม่มี', 'gray');
         setStatus('statusAi', 'AI: รอวิเคราะห์', 'gray');
+        localStorage.removeItem('pineapple-form-draft');
+        showFormStep(1);
         loadDashboard();
       }).catch(err => {
         submitButton.disabled = false;
         submitButton.classList.remove('opacity-60', 'cursor-not-allowed');
-        showApiError({ message: err.toString() }, 'บันทึกข้อมูลไม่สำเร็จ');
+        showApiError({ message: err.message || 'เชื่อมต่อระบบไม่สำเร็จ' }, 'บันทึกข้อมูลไม่สำเร็จ');
       });
     }
 
     function applyFilters() {
-      const text = (document.getElementById('globalSearch').value || '').toLowerCase();
+      const input = document.getElementById('globalSearch');
+      const text = String(input?.value || '').trim().toLowerCase();
       if (!dashboardData) return;
-      if (!text) return renderTopHarvest(allFarmsData);
-      renderTopHarvest(allFarmsData.filter(f => String(f.name || '').toLowerCase().includes(text) || String(f.variety || '').toLowerCase().includes(text)));
+      activeDashboardSearch = text;
+      const matchedFarms = text ? allFarmsData.filter(farm => matchesDashboardSearch(farm, text)) : allFarmsData;
+      const selectedStillVisible = matchedFarms.some(farm => String(farm.rowNumber) === String(selectedDashboardFarm?.rowNumber));
+      if (text && matchedFarms.length && !selectedStillVisible) selectedDashboardFarm = matchedFarms[0];
+      document.getElementById('clearDashboardSearch')?.toggleAttribute('hidden', !text);
+      setText('dashboardSearchStatus', text ? `พบ ${matchedFarms.length} แปลงจากคำค้น ${input.value.trim()}` : `แสดงทั้งหมด ${allFarmsData.length} แปลง`);
+      renderOperationalQueueList();
+      renderDashboardMap(matchedFarms);
+      renderTopHarvest(getForecastFarms(matchedFarms));
+      updateDashboardDecision();
+    }
+
+    function matchesDashboardSearch(farm, text) {
+      const risk = normalizeClientRisk(farm.risk || farm.riskText);
+      const searchable = [farm.name, farm.variety, farm.station, farm.risk, farm.riskText, risk, riskLabel(risk)].join(' ').toLowerCase();
+      return searchable.includes(String(text || '').toLowerCase());
+    }
+
+    function clearDashboardSearch() {
+      const input = document.getElementById('globalSearch');
+      if (input) input.value = '';
+      activeDashboardSearch = '';
+      applyFilters();
+      input?.focus();
+    }
+
+    function applyRiskFilter(value) {
+      activeRiskFilter = value || 'all';
+      renderAlertTable(dashboardData?.urgentTasks || []);
+    }
+
+    function riskLabel(value) {
+      const risk = String(value || '').toLowerCase();
+      if (risk === 'high') return 'สูง';
+      if (risk === 'medium') return 'ปานกลาง';
+      if (risk === 'low') return 'ต่ำ';
+      return escapeHtml(value || '-');
+    }
+
+    async function generateFieldTask() {
+      if (!requireOperator()) return;
+      const task = (dashboardData?.urgentTasks || [])[0];
+      if (!task) return Swal.fire({ icon: 'info', title: 'ยังไม่มีแปลงที่ต้องสร้างงาน' });
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      const result = await Swal.fire({
+        title: 'สร้างงานตรวจแปลง',
+        html: `<div class="text-left"><p class="font-bold mb-3">${escapeHtml(task.farmName)}</p><label class="font-bold">ผู้รับผิดชอบ<input id="taskAssignee" class="swal2-input m-0 mt-1 w-full" placeholder="ชื่อผู้รับผิดชอบ"></label><label class="font-bold block mt-4">กำหนดเสร็จ<input id="taskDueDate" type="date" value="${tomorrow}" class="swal2-input m-0 mt-1 w-full"></label><label class="font-bold block mt-4">คำแนะนำ<textarea id="taskMessage" class="swal2-textarea m-0 mt-1 w-full">${escapeHtml(task.message || '')}</textarea></label></div>`,
+        showCancelButton: true, confirmButtonText: 'สร้างงาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#003f2a',
+        preConfirm: () => {
+          const assignee = document.getElementById('taskAssignee').value.trim();
+          const dueDate = document.getElementById('taskDueDate').value;
+          const message = document.getElementById('taskMessage').value.trim();
+          if (!assignee || !dueDate || !message) return Swal.showValidationMessage('กรุณากรอกผู้รับผิดชอบ วันกำหนด และคำแนะนำ');
+          return { farmName: task.farmName, rowNumber: task.rowNumber, severity: task.severity, assignee, dueDate, message };
+        }
+      });
+      if (!result.isConfirmed) return;
+      Swal.fire({ title: 'กำลังสร้างงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        const response = await callAppsScript('createFieldTask', result.value);
+        if (!response.success) throw new Error(response.message || 'สร้างงานไม่สำเร็จ');
+        await Swal.fire({ icon: 'success', title: 'สร้างงานแล้ว', text: response.message, confirmButtonColor: '#003f2a' });
+      } catch (error) { showApiError({ message: error.message }, 'สร้างงานไม่สำเร็จ'); }
+    }
+
+    function prepareImageRescan() {
+      if (!requireOperator()) return;
+      switchPage('registerPage');
+      showFormStep(4);
+    }
+
+    function showFormStep(step) {
+      currentFormStep = Math.max(1, Math.min(5, Number(step) || 1));
+      document.querySelectorAll('.form-step').forEach(section => section.classList.toggle('active', Number(section.dataset.formStep) === currentFormStep));
+      document.querySelectorAll('.stepper-item').forEach((item, index) => {
+        const isActive = index + 1 === currentFormStep;
+        item.classList.toggle('active', isActive);
+        item.classList.toggle('complete', index + 1 < currentFormStep);
+        if (isActive) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
+      });
+      document.getElementById('previousStepButton')?.classList.toggle('invisible', currentFormStep === 1);
+      document.getElementById('nextStepButton')?.classList.toggle('hidden', currentFormStep === 5);
+      document.getElementById('submitButton')?.classList.toggle('hidden', currentFormStep !== 5);
+      setText('stepPosition', `ขั้นตอน ${currentFormStep} จาก 5`);
+      if (currentFormStep === 3) {
+        if (!formMap) initFormMap();
+        if (formMap) setTimeout(() => formMap.invalidateSize(), 100);
+      }
+      if (currentFormStep === 5) renderFormReview();
+    }
+
+    function changeFormStep(direction) {
+      if (direction > 0 && !validateFormStep(currentFormStep)) return;
+      showFormStep(currentFormStep + direction);
+      document.getElementById('registerPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      saveFormDraft();
+    }
+
+    function validateFormStep(step) {
+      clearFormErrors();
+      const form = document.getElementById('pineappleForm');
+      const section = form.querySelector(`[data-form-step="${step}"]`);
+      const required = [...section.querySelectorAll('[required]')];
+      let valid = true;
+      required.forEach(input => {
+        const value = String(input.value || '').trim();
+        if (!value || (input.type === 'number' && Number(value) <= 0)) { addFieldError(input, 'กรุณากรอกข้อมูลนี้'); valid = false; }
+      });
+      if (step === 1 && form.plantingDate.value && form.forcingDate.value && form.forcingDate.value < form.plantingDate.value) {
+        addFieldError(form.forcingDate, 'วันบังคับดอกต้องไม่ก่อนวันเริ่มปลูก'); valid = false;
+      }
+      if (!valid) section.querySelector('[aria-invalid="true"]')?.focus();
+      return valid;
+    }
+
+    function addFieldError(input, message) {
+      input.setAttribute('aria-invalid', 'true');
+      const errorId = `${input.id || input.name || 'field'}-error`;
+      const describedBy = new Set((input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+      describedBy.add(errorId);
+      input.setAttribute('aria-describedby', [...describedBy].join(' '));
+      const error = document.createElement('p'); error.id = errorId; error.className = 'field-error'; error.textContent = message;
+      (input.closest('label') || input.parentElement).appendChild(error);
+    }
+
+    function clearFormErrors() {
+      document.querySelectorAll('.field-error').forEach(error => error.remove());
+      document.querySelectorAll('[aria-invalid="true"]').forEach(input => {
+        input.removeAttribute('aria-invalid');
+        const ids = (input.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && !id.endsWith('-error'));
+        if (ids.length) input.setAttribute('aria-describedby', ids.join(' ')); else input.removeAttribute('aria-describedby');
+      });
+    }
+
+    function renderFormReview() {
+      const form = document.getElementById('pineappleForm');
+      const items = [['ชื่อแปลง', form.farmName.value], ['พื้นที่', `${form.plantArea.value || '-'} ไร่`], ['พันธุ์', form.variety.value], ['วันเริ่มปลูก', form.plantingDate.value || '-'], ['การระบายน้ำ', form.soilDrainage.options[form.soilDrainage.selectedIndex]?.text || '-'], ['ตำแหน่ง', form.latitude.value ? 'ปักหมุดแล้ว' : 'ยังไม่ปักหมุด'], ['ภาพ', currentImageBase64 ? 'มีภาพแล้ว' : 'ไม่ได้แนบภาพ'], ['ผล AI', currentAiLabel || 'ยังไม่วิเคราะห์']];
+      document.getElementById('formReview').innerHTML = items.map(([label, value]) => `<div><p class="text-gray-500">${label}</p><p class="font-extrabold mt-1">${escapeHtml(value)}</p></div>`).join('');
+    }
+
+    function saveFormDraft() {
+      const form = document.getElementById('pineappleForm'); if (!form) return;
+      const draft = {}; ['farmName','plantArea','variety','plantDensity','plantingDate','forcingDate','soilDrainage','soilType','irrigation','drainageScore','latitude','longitude','notes'].forEach(key => draft[key] = form.elements[key]?.value || '');
+      localStorage.setItem('pineapple-form-draft', JSON.stringify(draft));
+    }
+
+    function restoreFormDraft() {
+      try {
+        const draft = JSON.parse(localStorage.getItem('pineapple-form-draft') || '{}'); const form = document.getElementById('pineappleForm');
+        Object.entries(draft).forEach(([key, value]) => { if (form?.elements[key]) form.elements[key].value = value; });
+        if (draft.latitude && draft.longitude) setStatus('statusLocation', 'พิกัด: กู้คืนจากร่าง', 'green');
+      } catch (error) { localStorage.removeItem('pineapple-form-draft'); }
     }
 
     function focusFarm(rowNumber) {
@@ -1511,23 +2792,39 @@
       renderFieldPage({ farms: allFarmsData });
     }
 
+    function beginFieldRecord() {
+      if (!requireOperator()) return;
+      switchPage('registerPage');
+      showFormStep(1);
+      const farm = selectedFieldFarm || selectedDashboardFarm;
+      const form = document.getElementById('pineappleForm');
+      if (!farm || !form) return;
+      if (form.farmName) form.farmName.value = farm.name || '';
+      if (form.variety) form.variety.value = farm.variety || form.variety.value;
+      if (form.plantArea) form.plantArea.value = farm.area || farm.plantArea || form.plantArea.value;
+      if (form.latitude && form.longitude) {
+        const latlng = getFarmLatLng(farm);
+        if (latlng) {
+          form.latitude.value = latlng.lat;
+          form.longitude.value = latlng.lng;
+          setStatus('statusLocation', 'พิกัด: ใช้ตำแหน่งจากแปลงที่เลือก', 'green');
+        }
+      }
+      saveFormDraft();
+    }
+
     function exportAlertsCsv() {
+      if (!currentSessionUser) return openLogin();
       const tasks = dashboardData?.urgentTasks || [];
       const rows = [['Farm', 'Severity', 'Message'], ...tasks.map(t => [t.farmName, t.severity, t.message])];
-      const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'pineapple-alerts.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadCsv('pineapple-alerts.csv', rows);
+      setText('reportExportStatus', `ดาวน์โหลดรายการเสี่ยง ${tasks.length} รายการแล้ว`);
     }
 
     function setStatus(id, text, color) {
       const el = document.getElementById(id);
       if (!el) return;
-      const cls = color === 'green' ? 'bg-green-50 text-green-700 border-green-200' : color === 'amber' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-600 border-gray-200';
+      const cls = color === 'green' ? 'bg-green-50 text-green-700 border-green-200' : color === 'amber' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-[var(--ink)] border-gray-200';
       el.className = `${cls} border rounded-lg px-3 py-2 text-center font-semibold`;
       el.innerText = text;
     }

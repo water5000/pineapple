@@ -16,6 +16,49 @@ Flow การทำงาน:
 Browser -> Vercel /api/apps-script -> Google Apps Script -> Google Sheet / Google Drive
 ```
 
+## Production authentication และขอบเขตสถานี
+
+ระบบใช้ Google Identity Services สำหรับเข้าสู่ระบบ ตรวจ ID token ที่ Vercel ด้วย `google-auth-library` และออก signed HttpOnly session cookie อายุ 8 ชั่วโมง ผู้ใช้ต้องอยู่ใน `APP_USERS_JSON` จึงจะเข้าสู่ระบบได้
+
+หน้าเว็บเปิดในโหมดผู้เยี่ยมชมก่อนโดยไม่บังคับเข้าสู่ระบบ ผู้เยี่ยมชมดูข้อมูลของ `PUBLIC_STATION` แบบอ่านอย่างเดียวได้จากทุกหน้าหลัก รวมถึงชื่อแปลง พิกัดบนแผนที่ และภาพแปลงจริง ระบบไม่ส่งหมายเหตุภายในหรือผลติดตามหลังเก็บเกี่ยวผ่าน public endpoint เมนูเพิ่มข้อมูลและการเขียนข้อมูลทุกชนิดต้อง Google Sign-In และตรวจสิทธิ์ฝั่งเซิร์ฟเวอร์
+
+ตั้งค่า Vercel Environment Variables:
+
+```text
+GOOGLE_CLIENT_ID = OAuth 2.0 Web Client ID
+SESSION_SECRET = ค่าสุ่มอย่างน้อย 32 ตัวอักษร
+APP_USERS_JSON = รายชื่อผู้ใช้ สิทธิ์ และสถานีในรูปแบบ JSON
+DEFAULT_FORECAST_PERIOD = ช่วงเริ่มต้น เช่น 2026-Q4
+PUBLIC_STATION = สถานีที่อนุญาตให้ผู้ใช้ทั่วไปดูข้อมูลรายแปลงแบบอ่านอย่างเดียว เช่น ประจวบคีรีขันธ์
+APPS_SCRIPT_URL = Google Apps Script Web app URL
+API_SECRET = ค่าลับเดียวกับ Script Properties
+```
+
+ตัวอย่าง `APP_USERS_JSON`:
+
+```json
+[
+  { "email": "officer@example.go.th", "name": "สมชาย ใจดี", "role": "operator", "station": "ประจวบคีรีขันธ์" },
+  { "email": "director@example.go.th", "name": "ผู้บริหาร", "role": "viewer", "station": "ประจวบคีรีขันธ์" },
+  { "email": "admin@example.go.th", "name": "ผู้ดูแลระบบ", "role": "admin", "station": "*" }
+]
+```
+
+สิทธิ์ที่รองรับ:
+
+- `operator`: ดูข้อมูลของสถานี สร้างงาน และบันทึกข้อมูลภาคสนาม
+- `viewer`: ดูรายงานและส่งออกข้อมูลของสถานีเท่านั้น
+- `admin`: ดูทุกสถานีและฝึกโมเดลใหม่ได้
+
+ใน Google Cloud Console ให้สร้าง OAuth client ชนิด Web application และเพิ่มโดเมน Vercel จริงใน Authorized JavaScript origins จากนั้นตั้งค่า Apps Script Properties เพิ่มเติม:
+
+```text
+API_SECRET = ค่าเดียวกับ Vercel
+DEFAULT_STATION = ประจวบคีรีขันธ์
+```
+
+`DEFAULT_STATION` ใช้กำหนดสถานีให้ข้อมูลเดิมที่สร้างก่อนมีคอลัมน์ `Station` เท่านั้น ข้อมูลใหม่จะรับสถานีจาก session ที่ Vercel ตรวจสอบแล้ว และ Apps Script จะเพิ่มคอลัมน์ `Station` ให้ชีต `Farms`/`Tasks` อัตโนมัติ
+
 ## สิ่งที่ระบบรองรับแล้ว
 
 - แยก frontend/backend ชัดเจนผ่าน Vercel proxy
@@ -24,6 +67,7 @@ Browser -> Vercel /api/apps-script -> Google Apps Script -> Google Sheet / Googl
 - บันทึกรูปลง Google Drive แล้วเก็บเฉพาะ URL ใน Sheet
 - สร้าง/ตรวจ header ของชีต `Farms` อัตโนมัติ
 - สร้างชีต `Logs` เพื่อเก็บประวัติ action/error
+- สร้างชีต `Tasks` อัตโนมัติเมื่อมอบหมายงานตรวจแปลง พร้อมผู้รับผิดชอบ วันกำหนด และสถานะ
 - บันทึกข้อมูลใหม่
 - แก้ไขข้อมูลแปลงจาก dashboard
 - ลบข้อมูลแบบ soft delete
@@ -153,7 +197,7 @@ Deployments > เลือก deployment ล่าสุด > ... > Redeploy
 
 ## 6. โครงสร้างชีต
 
-ระบบจะใช้ชีต `Farms` และ `Logs`
+ระบบจะใช้ชีต `Farms`, `Logs` และ `Tasks`
 
 ชีต `Farms` เก็บข้อมูลหลัก เช่น:
 
@@ -178,6 +222,14 @@ Deployments > เลือก deployment ล่าสุด > ... > Redeploy
 - success/failure
 - message
 - detail
+
+ชีต `Tasks` เก็บงานภาคสนาม เช่น:
+
+- รหัสงาน
+- แปลงและระดับความเสี่ยง
+- ผู้รับผิดชอบ
+- วันกำหนด
+- คำแนะนำและสถานะงาน
 
 ## 7. แก้ปัญหาที่พบบ่อย
 
@@ -226,4 +278,10 @@ Dashboard ไม่เห็นข้อมูลที่เพิ่งลบ
 
 ```text
 node tests/ml-smoke.test.cjs
+```
+
+เมื่อแก้คลาสของ Tailwind ใน `index.html` ให้สร้างไฟล์ CSS สำหรับ Production ใหม่:
+
+```text
+npm run build:css
 ```

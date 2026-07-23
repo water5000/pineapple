@@ -1,5 +1,6 @@
 const DATA_SHEET_NAME = 'Farms';
 const LOG_SHEET_NAME = 'Logs';
+const TASK_SHEET_NAME = 'Tasks';
 
 const FARM_HEADERS = [
   'Timestamp',
@@ -80,10 +81,12 @@ const FARM_HEADERS = [
   'Disease Probabilities JSON',
   'Drought Stress Risk %',
   'Data Contract Version',
-  'Drought Stress Observed'
+  'Drought Stress Observed',
+  'Station'
 ];
 
 const LOG_HEADERS = ['Timestamp', 'Action', 'Success', 'Message', 'Detail'];
+const TASK_HEADERS = ['Task ID', 'Created At', 'Farm Name', 'Farm Row', 'Severity', 'Assignee', 'Due Date', 'Instruction', 'Status', 'Updated At', 'Station'];
 const YIELD_MODEL_KEY = 'YIELD_ML_MODEL_JSON';
 const DISEASE_MODEL_KEY = 'DISEASE_ML_MODEL_JSON';
 const YIELD_CHALLENGER_MODEL_KEY = 'YIELD_ML_CHALLENGER_JSON';
@@ -126,17 +129,11 @@ function getApiSecret() {
 
 function isAuthorizedRequest(body) {
   const expectedSecret = getApiSecret();
-  if (!expectedSecret) return true;
+  if (!expectedSecret) return false;
   return body && body.apiSecret === expectedSecret;
 }
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action === 'getDashboardData') {
-    return jsonResponse(getDashboardData());
-  }
-  if (e && e.parameter && e.parameter.action === 'getMLModelStatus') {
-    return jsonResponse(getMLModelStatus());
-  }
   return jsonResponse({ success: true, message: 'Pineapple Farm API is running.' });
 }
 
@@ -151,22 +148,30 @@ function doPost(e) {
 
     action = body.action || 'unknown';
     const payload = body.payload || {};
+    const requestContext = normalizeRequestContext(body.requestContext);
     let result;
 
     if (action === 'saveData') {
-      result = saveData(payload);
+      result = saveData(payload, requestContext);
     } else if (action === 'saveOutcome') {
-      result = saveOutcome(payload);
+      result = saveOutcome(payload, requestContext);
     } else if (action === 'updateData') {
-      result = updateData(payload);
+      result = updateData(payload, requestContext);
     } else if (action === 'deleteData') {
-      result = deleteData(payload);
+      result = deleteData(payload, requestContext);
     } else if (action === 'getDashboardData') {
-      result = getDashboardData();
+      result = getDashboardData(requestContext);
+    } else if (action === 'getPublicOverview') {
+      result = getPublicOverview(requestContext, payload);
+    } else if (action === 'getPublicDashboardData') {
+      result = getPublicDashboardData(requestContext);
     } else if (action === 'trainMLModels') {
+      requireAdmin(requestContext);
       result = trainMLModels(payload);
     } else if (action === 'getMLModelStatus') {
       result = getMLModelStatus();
+    } else if (action === 'createFieldTask') {
+      result = createFieldTask(payload, requestContext);
     } else {
       result = { success: false, message: 'Unknown action: ' + action };
     }
@@ -177,6 +182,45 @@ function doPost(e) {
     logEvent(action, false, error.toString(), '');
     return jsonResponse({ success: false, message: friendlyError(error), detail: error.toString() });
   }
+}
+
+function normalizeRequestContext(value) {
+  const context = value || {};
+  const role = ['operator', 'viewer', 'admin'].includes(String(context.role || '')) ? String(context.role) : 'viewer';
+  return {
+    email: String(context.email || '').trim().toLowerCase(),
+    name: String(context.name || '').trim(),
+    role: role,
+    station: role === 'admin' ? (String(context.station || '*').trim() || '*') : String(context.station || '').trim()
+  };
+}
+
+function requireOperator(context) {
+  if (!context || !context.email || !context.station || !['operator', 'admin'].includes(context.role)) {
+    throw new Error('Unauthorized: operator access required.');
+  }
+}
+
+function requireAdmin(context) {
+  if (!context || !context.email || context.role !== 'admin') {
+    throw new Error('Unauthorized: administrator access required.');
+  }
+}
+
+function legacyStation() {
+  return String(PropertiesService.getScriptProperties().getProperty('DEFAULT_STATION') || '').trim();
+}
+
+function getRowStation(row) {
+  return String(row[79] || legacyStation()).trim();
+}
+
+function canAccessStation(context, station) {
+  return Boolean(context && context.email && (context.role === 'admin' || (context.station && context.station === station)));
+}
+
+function assertRowAccess(row, context) {
+  if (!canAccessStation(context, getRowStation(row))) throw new Error('Unauthorized: plot is outside your station.');
 }
 
 function jsonResponse(obj) {
@@ -206,6 +250,46 @@ function getLogSheet() {
   if (!sheet) sheet = ss.insertSheet(LOG_SHEET_NAME);
   ensureHeader(sheet, LOG_HEADERS);
   return sheet;
+}
+
+function getTaskSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(TASK_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(TASK_SHEET_NAME);
+  ensureHeader(sheet, TASK_HEADERS);
+  return sheet;
+}
+
+function createFieldTask(payload, requestContext) {
+  requireOperator(requestContext);
+  const farmName = String(payload && payload.farmName || '').trim();
+  const assignee = String(payload && payload.assignee || '').trim();
+  const dueDate = String(payload && payload.dueDate || '').trim();
+  const instruction = String(payload && payload.message || '').trim();
+  if (!farmName) return { success: false, message: 'ไม่พบชื่อแปลงสำหรับสร้างงาน' };
+  if (!assignee) return { success: false, message: 'กรุณาระบุผู้รับผิดชอบ' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return { success: false, message: 'วันกำหนดไม่ถูกต้อง' };
+  if (!instruction) return { success: false, message: 'กรุณาระบุคำแนะนำสำหรับทีมภาคสนาม' };
+  const farmRow = parseInt(payload.rowNumber, 10);
+  if (!farmRow || farmRow <= 1 || farmRow > getDataSheet().getLastRow()) return { success: false, message: 'ไม่พบแปลงสำหรับสร้างงาน' };
+  const sourceRow = getDataSheet().getRange(farmRow, 1, 1, FARM_HEADERS.length).getValues()[0];
+  assertRowAccess(sourceRow, requestContext);
+  const now = new Date();
+  const taskId = 'TASK-' + Utilities.getUuid().slice(0, 8).toUpperCase();
+  getTaskSheet().appendRow([
+    taskId,
+    now,
+    farmName,
+    payload.rowNumber || '',
+    payload.severity || 'Medium',
+    assignee,
+    dueDate,
+    instruction,
+    'Open',
+    now,
+    getRowStation(sourceRow)
+  ]);
+  return { success: true, message: 'มอบหมายงาน ' + taskId + ' ให้ ' + assignee + ' แล้ว', taskId: taskId };
 }
 
 function ensureHeader(sheet, headers) {
@@ -478,7 +562,8 @@ function calculateFarmRecord(formObj, existingPhotoUrl, options) {
       JSON.stringify(diseaseClassification.probabilities || {}),
       diseaseClassification.droughtRisk,
       DATA_CONTRACT_VERSION,
-      droughtStressObserved
+      droughtStressObserved,
+      String(formObj.station || '').trim()
     ];
 
   if (preservePredictionSnapshot) {
@@ -496,10 +581,12 @@ function calculateFarmRecord(formObj, existingPhotoUrl, options) {
   };
 }
 
-function saveData(formObj) {
+function saveData(formObj, requestContext) {
   try {
+    requireOperator(requestContext);
     const sheet = getDataSheet();
-    const record = calculateFarmRecord(formObj, '');
+    const trustedForm = Object.assign({}, formObj || {}, { station: requestContext.station });
+    const record = calculateFarmRecord(trustedForm, '');
     sheet.appendRow(record.row);
     return {
       success: true,
@@ -511,8 +598,9 @@ function saveData(formObj) {
   }
 }
 
-function saveOutcome(payload) {
+function saveOutcome(payload, requestContext) {
   try {
+    requireOperator(requestContext);
     const sheet = getDataSheet();
     const rowNumber = parseInt(payload.rowNumber, 10);
     if (!rowNumber || rowNumber <= 1 || rowNumber > sheet.getLastRow()) {
@@ -528,6 +616,7 @@ function saveOutcome(payload) {
     }
 
     const row = sheet.getRange(rowNumber, 1, 1, FARM_HEADERS.length).getValues()[0];
+    assertRowAccess(row, requestContext);
     if (String(row[20] || 'Active') === 'Deleted') {
       throw new Error('Cannot add an outcome to a deleted plot.');
     }
@@ -590,8 +679,9 @@ function hasOutcomeMeasurement(formObj) {
   });
 }
 
-function updateData(payload) {
+function updateData(payload, requestContext) {
   try {
+    requireOperator(requestContext);
     const sheet = getDataSheet();
     const rowNumber = parseInt(payload.rowNumber, 10);
     if (!rowNumber || rowNumber <= 1 || rowNumber > sheet.getLastRow()) {
@@ -599,9 +689,10 @@ function updateData(payload) {
     }
 
     const existing = sheet.getRange(rowNumber, 1, 1, FARM_HEADERS.length).getValues()[0];
+    assertRowAccess(existing, requestContext);
     const existingPhotoUrl = existing[16] || '';
     const payloadForm = payload.formData || {};
-    const formObj = Object.assign({}, payloadForm, { timestamp: existing[0] || new Date() });
+    const formObj = Object.assign({}, payloadForm, { timestamp: existing[0] || new Date(), station: getRowStation(existing) || requestContext.station });
     const preservePredictionSnapshot = hasObservedOutcome(payloadForm) && Boolean(existing[64] || existing[32]);
     const record = calculateFarmRecord(formObj, existingPhotoUrl, {
       existingRow: existing,
@@ -687,15 +778,18 @@ function preserveRipenessColumns(nextRow, existingRow) {
   });
 }
 
-function deleteData(payload) {
+function deleteData(payload, requestContext) {
   try {
+    requireOperator(requestContext);
     const sheet = getDataSheet();
     const rowNumber = parseInt(payload.rowNumber, 10);
     if (!rowNumber || rowNumber <= 1 || rowNumber > sheet.getLastRow()) {
       throw new Error('Invalid row number.');
     }
 
-    const farmName = sheet.getRange(rowNumber, 2).getValue();
+    const row = sheet.getRange(rowNumber, 1, 1, FARM_HEADERS.length).getValues()[0];
+    assertRowAccess(row, requestContext);
+    const farmName = row[1];
     sheet.getRange(rowNumber, 21).setValue('Deleted');
     sheet.getRange(rowNumber, 20).setValue(new Date());
     return { success: true, message: `ลบข้อมูลแปลง <b>${farmName}</b> แล้ว` };
@@ -1823,8 +1917,11 @@ function sigmoid(value) {
   return 1 / (1 + Math.exp(-bounded));
 }
 
-function getDashboardData() {
+function getDashboardData(requestContext) {
   try {
+    if (!requestContext || !requestContext.email || (!requestContext.station && requestContext.role !== 'admin')) {
+      throw new Error('Unauthorized: authenticated station scope required.');
+    }
     const sheet = getDataSheet();
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) {
@@ -1838,6 +1935,8 @@ function getDashboardData() {
       const status = String(row[20] || 'Active');
       if (status === 'Deleted') return;
       if (!row[1]) return;
+      const station = getRowStation(row);
+      if (!canAccessStation(requestContext, station)) return;
 
       const farmName = String(row[1] || '');
       const area = parseFloat(row[2]) || 0;
@@ -2025,7 +2124,8 @@ function getDashboardData() {
           yieldMl,
           ripeness,
           dataContractVersion,
-          daysToHarvest
+          daysToHarvest,
+          station
         });
       }
     });
@@ -2034,6 +2134,112 @@ function getDashboardData() {
   } catch (error) {
     return { success: false, message: friendlyError(error), detail: error.toString() };
   }
+}
+
+function getPublicOverview(requestContext, payload) {
+  const result = getDashboardData(requestContext);
+  if (!result.success) return result;
+  const period = /^\d{4}-Q[1-4]$/.test(String(payload && payload.period || '')) ? String(payload.period) : '';
+  const farms = (result.data.farms || []).filter(farm => isFarmInForecastPeriod(farm, period));
+  const risks = { Low: 0, Medium: 0, High: 0 };
+  const monthlyYields = {};
+  let totalArea = 0;
+  let totalYield = 0;
+
+  farms.forEach(farm => {
+    totalArea += Number(farm.area || 0);
+    totalYield += Number(farm.yield || 0);
+    risks[normalizeRisk(farm.risk)]++;
+    const month = getMonthKey(farm.harvestDate);
+    monthlyYields[month] = (monthlyYields[month] || 0) + Number(farm.yield || 0);
+  });
+
+  return {
+    success: true,
+    data: {
+      public: true,
+      station: requestContext.station,
+      period: period,
+      plotCount: farms.length,
+      totalArea: Number(totalArea.toFixed(2)),
+      totalYield: Number(totalYield.toFixed(2)),
+      risks: risks,
+      monthlyYields: monthlyYields,
+      updatedAt: new Date()
+    }
+  };
+}
+
+function getPublicDashboardData(requestContext) {
+  const result = getDashboardData(requestContext);
+  if (!result.success) return result;
+  const source = result.data || emptyDashboard();
+  const publicFarmFields = [
+    'rowNumber', 'id', 'name', 'lat', 'lng', 'area', 'variety', 'plantDensity',
+    'soilType', 'irrigation', 'drainageScore', 'plantingDate', 'forcingDate',
+    'soilDrainage', 'harvestDate', 'yield', 'weight', 'grade', 'brix', 'risk',
+    'riskText', 'riskMessage', 'revenue', 'aiAnalysis', 'aiLabel', 'aiConfidence',
+    'photo', 'weatherFeatures', 'diseaseClassification', 'yieldMl', 'ripeness',
+    'dataContractVersion', 'daysToHarvest', 'station'
+  ];
+  const farms = (source.farms || []).map(function(farm) {
+    const projected = {};
+    publicFarmFields.forEach(function(key) {
+      if (Object.prototype.hasOwnProperty.call(farm, key)) projected[key] = farm[key];
+    });
+    if (farm.diseaseClassification) {
+      projected.diseaseClassification = projectPublicFields(farm.diseaseClassification, [
+        'version', 'predictedClass', 'riskScore', 'probability', 'severity',
+        'reasons', 'action', 'probabilities', 'droughtRisk'
+      ]);
+    }
+    if (farm.yieldMl) {
+      projected.yieldMl = projectPublicFields(farm.yieldMl, [
+        'version', 'predictionTon', 'confidence', 'lowTon', 'highTon', 'featureVersion'
+      ]);
+    }
+    return projected;
+  });
+
+  return {
+    success: true,
+    data: {
+      public: true,
+      readOnly: true,
+      station: requestContext.station,
+      totalYield: source.totalYield,
+      totalArea: source.totalArea,
+      totalBrix: source.totalBrix,
+      countBrix: source.countBrix,
+      totalRevenue: source.totalRevenue,
+      urgentTasks: source.urgentTasks || [],
+      harvestSoon: source.harvestSoon || [],
+      noPhoto: source.noPhoto || [],
+      monthlyYields: source.monthlyYields || {},
+      risks: source.risks || { Low: 0, Medium: 0, High: 0 },
+      aiGrades: source.aiGrades || { Level0: 0, Level1: 0, Level2: 0, Level3: 0, Unknown: 0 },
+      weatherForecast: source.weatherForecast || [],
+      actuals: { count: 0, totalYield: 0, totalPredictedYield: 0 },
+      farms: farms,
+      updatedAt: new Date()
+    }
+  };
+}
+
+function projectPublicFields(source, allowedFields) {
+  const output = {};
+  allowedFields.forEach(function(key) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) output[key] = source[key];
+  });
+  return output;
+}
+
+function isFarmInForecastPeriod(farm, period) {
+  if (!period) return true;
+  const match = period.match(/^(\d{4})-Q([1-4])$/);
+  const date = parseSheetDate(farm && farm.harvestDate);
+  if (!match || !date) return false;
+  return date.getFullYear() === Number(match[1]) && Math.floor(date.getMonth() / 3) + 1 === Number(match[2]);
 }
 
 function emptyDashboard() {

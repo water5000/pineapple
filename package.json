@@ -1,0 +1,16 @@
+{
+  "name": "smart-pineapple",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:css": "tailwindcss -i ./styles.input.css -o ./tailwind.min.css --minify",
+    "preview": "node tests/static-server.cjs",
+    "test": "node tests/ml-smoke.test.cjs && node tests/auth-smoke.test.mjs && node tests/ui-smoke.test.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  },
+  "dependencies": {
+    "google-auth-library": "^10.9.0"
+  }
+}
