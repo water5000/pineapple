@@ -21,7 +21,60 @@ vm.runInContext(source, context);
 
 const run = expression => vm.runInContext(expression, context);
 
-assert.equal(run('FARM_HEADERS.length'), 79);
+assert.equal(run('FARM_HEADERS.length'), 80);
+assert.equal(run("FARM_HEADERS[79]"), 'Station');
+propertyStore.set('DEFAULT_STATION', 'ประจวบคีรีขันธ์');
+assert.equal(run('getRowStation(Array(80).fill(""))'), 'ประจวบคีรีขันธ์');
+assert.equal(run('canAccessStation({ email: "officer@example.org", role: "operator", station: "ประจวบคีรีขันธ์" }, "ประจวบคีรีขันธ์")'), true);
+assert.equal(run('canAccessStation({ email: "viewer@example.org", role: "viewer", station: "เพชรบุรี" }, "ประจวบคีรีขันธ์")'), false);
+assert.equal(run("isFarmInForecastPeriod({ harvestDate: '15/10/2026' }, '2026-Q4')"), true);
+assert.equal(run("isFarmInForecastPeriod({ harvestDate: '15/09/2026' }, '2026-Q4')"), false);
+run(`
+  globalThis.__originalDashboardReader = getDashboardData;
+  getDashboardData = () => ({ success: true, data: { farms: [
+    { name: 'private-farm', lat: 12.3, lng: 99.4, area: 10, yield: 20, risk: 'High', harvestDate: '15/10/2026' },
+    { name: 'other-quarter', lat: 12.4, lng: 99.5, area: 5, yield: 8, risk: 'Low', harvestDate: '15/09/2026' }
+  ] } });
+  globalThis.__publicOverview = getPublicOverview(
+    { email: 'public-overview@system.local', role: 'viewer', station: 'ประจวบคีรีขันธ์' },
+    { period: '2026-Q4' }
+  );
+  getDashboardData = globalThis.__originalDashboardReader;
+`);
+assert.equal(run('__publicOverview.data.plotCount'), 1);
+assert.equal(run('__publicOverview.data.totalYield'), 20);
+assert.equal(run('__publicOverview.data.risks.High'), 1);
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicOverview.data, "farms")'), false);
+assert.equal(run('JSON.stringify(__publicOverview).includes("private-farm")'), false);
+run(`
+  getDashboardData = () => ({ success: true, data: {
+    totalYield: 20, totalArea: 10, totalBrix: 13, countBrix: 1, totalRevenue: 200000,
+    urgentTasks: [], harvestSoon: [], noPhoto: [], monthlyYields: {},
+    risks: { Low: 0, Medium: 0, High: 1 },
+    aiGrades: { Level0: 0, Level1: 0, Level2: 1, Level3: 0, Unknown: 0 },
+    farms: [{
+      rowNumber: 2, name: 'public-farm', lat: 12.3, lng: 99.4,
+      photo: 'https://example.test/farm.jpg', notes: 'internal-note',
+      actualYieldTon: 18, outcomeObservedAt: '2026-07-20', risk: 'High',
+      diseaseClassification: { predictedClass: 'risk', trainingLabel: 'observed-disease' },
+      yieldMl: { predictionTon: 20, trainingTargetTon: 18 }
+    }]
+  } });
+  globalThis.__publicDashboard = getPublicDashboardData(
+    { email: 'public-overview@system.local', role: 'viewer', station: 'public-station' }
+  );
+  getDashboardData = globalThis.__originalDashboardReader;
+`);
+assert.equal(run('__publicDashboard.data.readOnly'), true);
+assert.equal(run('__publicDashboard.data.farms[0].name'), 'public-farm');
+assert.equal(run('__publicDashboard.data.farms[0].lat'), 12.3);
+assert.equal(run('__publicDashboard.data.farms[0].lng'), 99.4);
+assert.equal(run('__publicDashboard.data.farms[0].photo'), 'https://example.test/farm.jpg');
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicDashboard.data.farms[0], "notes")'), false);
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicDashboard.data.farms[0], "actualYieldTon")'), false);
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicDashboard.data.farms[0], "outcomeObservedAt")'), false);
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicDashboard.data.farms[0].diseaseClassification, "trainingLabel")'), false);
+assert.equal(run('Object.prototype.hasOwnProperty.call(__publicDashboard.data.farms[0].yieldMl, "trainingTargetTon")'), false);
 assert.deepEqual(
   Array.from(run("parseDiseaseLabels('Low Disease Risk|Root/Crown Rot Risk|Fungal Spot/Leaf Disease Risk')")),
   ['Root/Crown Rot Risk', 'Fungal Spot/Leaf Disease Risk']
